@@ -1,0 +1,19 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flow", "Flow.csproj", "{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+	Debug|Any CPU = Debug|Any CPU
+	ExportDebug|Any CPU = ExportDebug|Any CPU
+	ExportRelease|Any CPU = ExportRelease|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}.ExportDebug|Any CPU.ActiveCfg = ExportDebug|Any CPU
+		{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}.ExportDebug|Any CPU.Build.0 = ExportDebug|Any CPU
+		{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}.ExportRelease|Any CPU.ActiveCfg = ExportRelease|Any CPU
+		{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}.ExportRelease|Any CPU.Build.0 = ExportRelease|Any CPU
+	EndGlobalSection
+EndGlobal

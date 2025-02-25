@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://cfj61lmn3hdw0"
+path="res://.godot/imported/04-rock and metal-250222_0902.wav-09314317f67d8e73c2c5a44f00282ad6.sample"
+
+[deps]
+
+source_file="res://player/sound/footstep/project/04-rock and metal-250222_0902.wav"
+dest_files=["res://.godot/imported/04-rock and metal-250222_0902.wav-09314317f67d8e73c2c5a44f00282ad6.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=0

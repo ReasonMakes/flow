@@ -1,0 +1,7 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://daiyptmfwsngr"]
+
+[ext_resource type="Shader" path="res://UI/dash_lines.gdshader" id="1_nc8y2"]
+
+[resource]
+shader = ExtResource("1_nc8y2")
+shader_parameter/opacity = null
