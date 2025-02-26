@@ -3,16 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\ui\\menu\\menu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:ui\\menu\\menu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\foley.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\foley.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\player.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -30,7 +30,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Document",
@@ -54,38 +54,37 @@
               "RelativeToolTip": "player\\Player.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAABtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-25T21:56:14.926Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-25T21:56:14.926Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "PlayerMovement.cs",
               "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
               "RelativeDocumentMoniker": "player\\PlayerMovement.cs",
               "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
               "RelativeToolTip": "player\\PlayerMovement.cs",
-              "ViewState": "AgIAAI8AAAAAAAAAAAAewKMAAAAdAAAAAAAAAA==",
+              "ViewState": "AgIAALwBAAAAAAAAAAAewMoBAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-25T21:55:42.623Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Menu.cs",
               "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\UI\\menu\\Menu.cs",
               "RelativeDocumentMoniker": "UI\\menu\\Menu.cs",
               "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\UI\\menu\\Menu.cs",
               "RelativeToolTip": "UI\\menu\\Menu.cs",
-              "ViewState": "AgIAADsAAAAAAAAAAIA9wE4AAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAD8AAAAAAAAAAAApwFMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-25T21:23:18.432Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Foley.cs",
               "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\Foley.cs",
               "RelativeDocumentMoniker": "player\\Foley.cs",
@@ -93,8 +92,7 @@
               "RelativeToolTip": "player\\Foley.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAwAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-25T21:30:09.435Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-25T21:30:09.435Z"
             }
           ]
         }
