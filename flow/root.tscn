@@ -1,4 +1,4 @@
-[gd_scene load_steps=40 format=3 uid="uid://wfhvshehcqq7"]
+[gd_scene load_steps=43 format=3 uid="uid://wfhvshehcqq7"]
 
 [ext_resource type="Script" path="res://Root.cs" id="1_vrp4g"]
 [ext_resource type="Script" path="res://UI/menu/Menu.cs" id="2_esyfm"]
@@ -21,7 +21,6 @@
 [ext_resource type="AudioStream" uid="uid://bh4c7a5v4gqfq" path="res://player/sound/jump_and_land/jump1.mp3" id="11_q1xcc"]
 [ext_resource type="AudioStream" uid="uid://cte3rqt4em07x" path="res://player/sound/jump_and_land/jump2.mp3" id="12_hmhi6"]
 [ext_resource type="AudioStream" uid="uid://cu43qnsbwwfsp" path="res://player/sound/jump_and_land/jump3.mp3" id="13_i886f"]
-[ext_resource type="Material" uid="uid://brf4cqd8ucycx" path="res://map/floor.tres" id="13_kdjxc"]
 [ext_resource type="AudioStream" uid="uid://chy88wmkbga23" path="res://player/sound/jump_and_land/land1_-3.8.mp3" id="14_oxti6"]
 [ext_resource type="AudioStream" uid="uid://5574hwiqixfc" path="res://player/sound/jump_and_land/land2_-3.8.mp3" id="15_ku3wv"]
 [ext_resource type="AudioStream" uid="uid://bw5x50dag1ndj" path="res://player/sound/jump_and_land/land3.mp3" id="16_pfv5e"]
@@ -29,6 +28,7 @@
 [ext_resource type="AudioStream" uid="uid://c570dnuxckjdc" path="res://player/sound/slide/slide2.mp3" id="18_cmg3g"]
 [ext_resource type="AudioStream" uid="uid://b81kwxv53i8ln" path="res://player/sound/slide/slide3.mp3" id="19_rthxu"]
 [ext_resource type="AudioStream" uid="uid://cqmd2xmqbuyvb" path="res://player/sound/slide/slide4.mp3" id="20_km2s8"]
+[ext_resource type="Texture2D" uid="uid://dr3pkqwhc2g2p" path="res://map/floor_albedo.png" id="29_mk3ig"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fdpyu"]
 sky_top_color = Color(0, 0, 0, 1)
@@ -92,6 +92,18 @@ stream_1/stream = ExtResource("18_cmg3g")
 stream_2/stream = ExtResource("19_rthxu")
 stream_3/stream = ExtResource("20_km2s8")
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6s616"]
+albedo_texture = ExtResource("29_mk3ig")
+uv1_scale = Vector3(50, 50, 50)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r6x8e"]
+albedo_texture = ExtResource("29_mk3ig")
+uv1_scale = Vector3(2, 2, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ejnov"]
+albedo_texture = ExtResource("29_mk3ig")
+uv1_scale = Vector3(25, 25, 25)
+
 [node name="Root" type="Node3D" node_paths=PackedStringArray("Player", "UpdateRateSpinBox")]
 script = ExtResource("1_vrp4g")
 Player = NodePath("Player")
@@ -104,13 +116,14 @@ environment = SubResource("Environment_qedk2")
 transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
 shadow_enabled = true
 
-[node name="Player" type="Node3D" parent="." node_paths=PackedStringArray("PlayerMovement", "Statistics", "HUD", "ScreenEffects", "Foley")]
+[node name="Player" type="Node3D" parent="." node_paths=PackedStringArray("PlayerMovement", "Statistics", "HUD", "ScreenEffects", "Foley", "LabelTimer")]
 script = ExtResource("3_2jdfd")
 PlayerMovement = NodePath("Movement")
 Statistics = NodePath("UI/HUD/Statistics")
 HUD = NodePath("UI/HUD")
 ScreenEffects = NodePath("UI/ScreenEffects")
 Foley = NodePath("Foley")
+LabelTimer = NodePath("UI/HUD/Top/LabelTimer")
 
 [node name="Movement" type="CharacterBody3D" parent="Player" node_paths=PackedStringArray("CameraPlayer", "Player", "ColliderCapsule", "ColliderSphere")]
 script = ExtResource("3_3qxmi")
@@ -151,7 +164,7 @@ bus = &"Foley"
 
 [node name="Wallrun" type="AudioStreamPlayer" parent="Player/Foley"]
 stream = ExtResource("6_64o50")
-volume_db = -15.0
+volume_db = -51.72
 bus = &"Foley"
 
 [node name="Climb" type="AudioStreamPlayer" parent="Player/Foley"]
@@ -179,7 +192,7 @@ bus = &"Foley"
 
 [node name="Dash" type="AudioStreamPlayer" parent="Player/Foley"]
 stream = ExtResource("5_kyjnb")
-volume_db = -14.0
+volume_db = -10.0
 bus = &"Foley"
 
 [node name="Music" type="Node" parent="Player"]
@@ -289,9 +302,18 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="LabelDead" type="Label" parent="Player/UI/HUD/Centre"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 23.0
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -59.5
+offset_top = -11.5
+offset_right = 59.5
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
 text = "Death message"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -318,6 +340,28 @@ color = Color(0, 1, 1, 1)
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+
+[node name="Top" type="Control" parent="Player/UI/HUD"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 40.0
+grow_horizontal = 2
+
+[node name="LabelTimer" type="Label" parent="Player/UI/HUD/Top"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -192.5
+offset_right = 192.5
+offset_bottom = 23.0
+grow_horizontal = 2
+text = "0:00.00"
+horizontal_alignment = 1
 
 [node name="Menu" type="Control" parent="Player/UI" node_paths=PackedStringArray("ButtonQuit")]
 layout_mode = 1
@@ -418,6 +462,34 @@ max_value = 1000.0
 alignment = 1
 suffix = "(Auto)"
 
+[node name="AntiAliasing" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Player/UI/Menu/VBoxContainer/AntiAliasing"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Anti-aliasing"
+
+[node name="CheckBoxAntiAliasing" type="CheckBox" parent="Player/UI/Menu/VBoxContainer/AntiAliasing"]
+layout_mode = 2
+size_flags_horizontal = 3
+button_pressed = true
+
+[node name="DirectionalShadowSize" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Player/UI/Menu/VBoxContainer/DirectionalShadowSize"]
+layout_mode = 2
+text = "Directional Shadow Size"
+
+[node name="HSliderShadowSize" type="HSlider" parent="Player/UI/Menu/VBoxContainer/DirectionalShadowSize"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+min_value = 8.0
+max_value = 14.0
+value = 12.0
+
 [node name="Quit" parent="Player/UI/Menu/VBoxContainer" instance=ExtResource("3_6315c")]
 layout_mode = 2
 text = "Quit"
@@ -430,10 +502,22 @@ use_collision = true
 [node name="Floor" type="CSGBox3D" parent="Map/Greybox"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 size = Vector3(50, 1, 50)
-material = ExtResource("13_kdjxc")
+material = SubResource("StandardMaterial3D_6s616")
+
+[node name="CSGBox" type="CSGBox3D" parent="Map/Greybox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5)
+size = Vector3(2, 2, 2)
+material = SubResource("StandardMaterial3D_r6x8e")
+
+[node name="Wall" type="CSGBox3D" parent="Map/Greybox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, 0)
+size = Vector3(2, 25, 25)
+material = SubResource("StandardMaterial3D_ejnov")
 
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MainVolume/HSliderMain" to="Player/UI/Menu" method="OnHSliderMainValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/FoleyVolume/HSliderFoley" to="Player/UI/Menu" method="OnHSliderFoleyValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MusicVolume/HSliderMusic" to="Player/UI/Menu" method="OnHSliderMusicValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/UpdateRate/UpdateRateSpinBox" to="." method="OnUpdateRateSpinBoxValueChanged"]
+[connection signal="toggled" from="Player/UI/Menu/VBoxContainer/AntiAliasing/CheckBoxAntiAliasing" to="Player/UI/Menu" method="OnCheckBoxAntiAliasingToggled"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/DirectionalShadowSize/HSliderShadowSize" to="Player/UI/Menu" method="OnHSliderShadowSizeValueChanged"]
 [connection signal="pressed" from="Player/UI/Menu/VBoxContainer/Quit" to="Player/UI/Menu" method="OnButtonQuitPressed"]

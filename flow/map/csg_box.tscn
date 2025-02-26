@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://tskmh0cbpy07"]
+
+[ext_resource type="Material" uid="uid://brf4cqd8ucycx" path="res://map/floor.tres" id="1_pcned"]
+
+[node name="CSGBox" type="CSGBox3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+size = Vector3(2, 2, 2)
+material = ExtResource("1_pcned")

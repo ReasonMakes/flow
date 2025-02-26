@@ -8,7 +8,7 @@ public partial class Foley : Node
     [Export(PropertyHint.Range, "0,10,")] public float RunAudioTimerPeriod = 0.25f; //time in seconds before another footstep sound can be played
 
     [Export] public AudioStreamPlayer AudioWallrun;
-    [Export] public float AudioWallrunVolume = -10f;
+    [Export] public float AudioWallrunVolume = -15f;
     [Export] public float AudioWallrunVolumeFadeOutRate = 100f; //0 to +inf. Larger values mean fade out faster. Decibels subtracted/second
     [Export] public AudioStreamPlayer AudioClimb;
 

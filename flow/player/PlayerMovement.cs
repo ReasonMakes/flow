@@ -496,7 +496,6 @@ public partial class PlayerMovement : CharacterBody3D
                     //Climb
                     Vector3 climbVector = -GetGravity() * (ClimbAcceleration * (ClimbRemaining / ClimbPeriod) * dotWall);
                     ApplyAccelerationOverTime(climbVector, delta);
-                    //Velocity += -GetGravity() * (ClimbAcceleration * (ClimbRemaining / ClimbPeriod) * dotWall * delta);
 
                     //Wall-run
                     if (!IsOnFloor() && dotWall < 0.75f)
@@ -506,17 +505,15 @@ public partial class PlayerMovement : CharacterBody3D
                         //Get direction
                         Vector3 wallTangent = GetWallNormal().Cross(Vector3.Up); //pretty much all the way there
                         Vector3 projectedDirection = (wallTangent * runVector.Dot(wallTangent)).Normalized(); //consider which horizontal direction we're going along the wall
-                                                                                                              //testBox.Position = new Vector3(Position.X, Position.Y + 1f, Position.Z) + (2f * projectedDirection);
+                        //testBox.Position = new Vector3(Position.X, Position.Y + 1f, Position.Z) + (2f * projectedDirection);
 
                         //Horizontal acceleration
                         Vector3 wallRunHorizontalVector = projectedDirection * (WallRunAcceleration * (1f - dotWall));
                         ApplyAccelerationOverTime(wallRunHorizontalVector, delta);
-                        //Velocity += projectedDirection * (WallRunAcceleration * (1f - dotWall) * delta);
 
                         //Vertical acceleration
                         Vector3 wallRunVerticalVector = -GetGravity() * (ClimbAcceleration * ClimbCoefficientWallRunVerticalAcceleration * (ClimbRemaining / ClimbPeriod) * dotWall);
                         ApplyAccelerationOverTime(wallRunVerticalVector, delta);
-                        //Velocity += -GetGravity() * (WallRunVerticalAcceleration * (ClimbRemaining / ClimbPeriod) * dotWall * delta);
                     }
 
                     //Decrement
@@ -583,7 +580,7 @@ public partial class PlayerMovement : CharacterBody3D
         //Statistics.RectClimb.Scale = new(ClimbRemaining / ClimbPeriod, 1f);
 
         //Audio Climb - repeat one-shots
-        if (IsClimbingOrWallRunning && !IsWallRunning)
+        if (IsClimbingOrWallRunning && !IsWallRunning && !IsSliding)
         {
             if (!Player.Foley.AudioClimb.Playing)
             {

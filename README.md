@@ -1,7 +1,7 @@
 # Flow
 A first-person movement game
 
-## Default Controls  
+## Default Binds  
 ### Movement
 - Run: WASD
 - Jump: Space
