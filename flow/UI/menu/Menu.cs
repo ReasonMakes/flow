@@ -77,6 +77,13 @@ public partial class Menu : Control
         }
     }
 
+    public void OnHSliderShadowSizeValueChanged(float valRoundedToInt)
+    {
+        int size = (int)valRoundedToInt;
+
+
+    }
+
     //public void OnHSliderShadowSizeValueChanged(float valRoundedToInt)
     //{
     //    //TODO: this doesn't actually update the rendering even though the actual setting is being updated.

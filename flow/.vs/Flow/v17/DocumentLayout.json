@@ -54,8 +54,7 @@
               "RelativeToolTip": "player\\Player.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAABtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-25T21:56:14.926Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-25T21:56:14.926Z"
             },
             {
               "$type": "Document",
@@ -67,8 +66,7 @@
               "RelativeToolTip": "player\\PlayerMovement.cs",
               "ViewState": "AgIAAI8AAAAAAAAAAAAewKMAAAAdAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-25T21:55:42.623Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-25T21:55:42.623Z"
             },
             {
               "$type": "Document",
@@ -78,7 +76,7 @@
               "RelativeDocumentMoniker": "UI\\menu\\Menu.cs",
               "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\UI\\menu\\Menu.cs",
               "RelativeToolTip": "UI\\menu\\Menu.cs",
-              "ViewState": "AgIAADsAAAAAAAAAAIA9wE4AAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAD8AAAAAAAAAAAApwFMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-25T21:23:18.432Z",
               "EditorCaption": ""
@@ -93,8 +91,7 @@
               "RelativeToolTip": "player\\Foley.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAwAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-25T21:30:09.435Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-25T21:30:09.435Z"
             }
           ]
         }
