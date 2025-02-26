@@ -1,4 +1,4 @@
-[gd_scene load_steps=43 format=3 uid="uid://wfhvshehcqq7"]
+[gd_scene load_steps=45 format=3 uid="uid://wfhvshehcqq7"]
 
 [ext_resource type="Script" path="res://Root.cs" id="1_vrp4g"]
 [ext_resource type="Script" path="res://UI/menu/Menu.cs" id="2_esyfm"]
@@ -94,7 +94,7 @@ stream_3/stream = ExtResource("20_km2s8")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6s616"]
 albedo_texture = ExtResource("29_mk3ig")
-uv1_scale = Vector3(50, 50, 50)
+uv1_scale = Vector3(100, 100, 100)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r6x8e"]
 albedo_texture = ExtResource("29_mk3ig")
@@ -103,6 +103,14 @@ uv1_scale = Vector3(2, 2, 2)
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ejnov"]
 albedo_texture = ExtResource("29_mk3ig")
 uv1_scale = Vector3(25, 25, 25)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o5i7u"]
+albedo_texture = ExtResource("29_mk3ig")
+uv1_scale = Vector3(6, 6, 6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eaw0r"]
+albedo_texture = ExtResource("29_mk3ig")
+uv1_scale = Vector3(80, 18, 0)
 
 [node name="Root" type="Node3D" node_paths=PackedStringArray("Player", "UpdateRateSpinBox")]
 script = ExtResource("1_vrp4g")
@@ -113,7 +121,7 @@ UpdateRateSpinBox = NodePath("Player/UI/Menu/VBoxContainer/UpdateRate/UpdateRate
 environment = SubResource("Environment_qedk2")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+transform = Transform3D(-0.707104, -0.612375, 0.353553, 0, 0.499998, 0.866027, -0.707109, 0.612371, -0.353551, 0, 12, 0)
 shadow_enabled = true
 
 [node name="CSGBox3D" type="CSGBox3D" parent="."]
@@ -503,8 +511,8 @@ text = "Quit"
 use_collision = true
 
 [node name="Floor" type="CSGBox3D" parent="Map/Greybox"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
-size = Vector3(50, 1, 50)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -25)
+size = Vector3(100, 1, 100)
 material = SubResource("StandardMaterial3D_6s616")
 
 [node name="CSGBox" type="CSGBox3D" parent="Map/Greybox"]
@@ -521,6 +529,24 @@ material = SubResource("StandardMaterial3D_ejnov")
 transform = Transform3D(-5.96046e-08, 0, -1, 0.258819, 0.965926, -1.54268e-08, 0.965926, -0.258819, -5.75737e-08, -2, 1, 20)
 size = Vector3(2, 25, 25)
 material = SubResource("StandardMaterial3D_ejnov")
+
+[node name="CSGBox2" type="CSGBox3D" parent="Map/Greybox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3, -20)
+size = Vector3(6, 6, 6)
+material = SubResource("StandardMaterial3D_o5i7u")
+
+[node name="CSGSphere3D" type="CSGSphere3D" parent="Map/Greybox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 7, -13)
+radius = 5.0
+radial_segments = 20
+rings = 12
+
+[node name="CSGCylinder3D" type="CSGCylinder3D" parent="Map/Greybox"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, -15, 10, -47)
+radius = 17.0
+height = 38.0
+sides = 40
+material = SubResource("StandardMaterial3D_eaw0r")
 
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MainVolume/HSliderMain" to="Player/UI/Menu" method="OnHSliderMainValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/FoleyVolume/HSliderFoley" to="Player/UI/Menu" method="OnHSliderFoleyValueChanged"]

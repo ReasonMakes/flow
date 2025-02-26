@@ -457,34 +457,48 @@ public partial class PlayerMovement : CharacterBody3D
     private void Climb(float delta, Vector3 runVector)
     {
         //Get the camera-forward direction
-        //TODO: swap this for a total movement direction, jsut relative to camerarun
-        Vector3 climbDirection = Vector3.Zero;
-        if (InputRunForward) climbDirection -= CameraPlayer.GlobalTransform.Basis.Z;
-        if (InputRunLeft) climbDirection -= CameraPlayer.GlobalTransform.Basis.X;
-        if (InputRunRight) climbDirection += CameraPlayer.GlobalTransform.Basis.X;
-        if (InputRunBack) climbDirection += CameraPlayer.GlobalTransform.Basis.Z;
-        climbDirection = climbDirection.Normalized();
+        Vector3 wishDirection = Vector3.Zero;
+        if (InputRunForward) wishDirection -= CameraPlayer.GlobalTransform.Basis.Z;
+        if (InputRunLeft) wishDirection -= CameraPlayer.GlobalTransform.Basis.X;
+        if (InputRunRight) wishDirection += CameraPlayer.GlobalTransform.Basis.X;
+        if (InputRunBack) wishDirection += CameraPlayer.GlobalTransform.Basis.Z;
+        wishDirection = wishDirection.Normalized();
 
         if (!IsOnWall())
         {
-            TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + climbDirection * 2.0f;
+            TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + wishDirection * 2.0f;
         }
         else if (IsOnWall())
         {
             //(Relative to wall) Remove the component that points into the wall - this gives us a vector along the wall that is 0 if we look straight at the wall
             Vector3 wallNormal = GetWallNormal();
-            Vector3 lookDirectionAlongWall = climbDirection - (climbDirection.Dot(wallNormal) * wallNormal);
+            Vector3 lookDirectionAlongWall = wishDirection - (wishDirection.Dot(wallNormal) * wallNormal);
 
-            //(Wallrun) Get our horizontal component by removing the wall's vertical component (this is which way is up along the wall, not the world up) so it can never be up or down
+            //For wallrunning AND climbing
+            //Isolate horizontal component
+            Vector3 horizontalDirection = lookDirectionAlongWall - (lookDirectionAlongWall.Dot(Vector3.Up) * Vector3.Up);
 
-            //(Climb) Set our up component to be the complement to our horizontal component. (Where horizontal is 0, up is 1, and vice versa)
+            //For climbing ONLY
+            //Get the vertical direction along the wall - if the wall is slanted, this points up along the slant
+            Vector3 wallTangent = wallNormal.Cross(Vector3.Up);
+            Vector3 verticalDirectionAlongWall = wallTangent.Cross(wallNormal).Normalized();
 
-            //Combine these two components
-
+            //Combine these two components based on whether looking sideways along the wall
+            Vector3 direction;
+            if (horizontalDirection.Dot(-CameraPlayer.GlobalTransform.Basis.Z) > 0.75f)
+            {
+                //Wallrunning
+                direction = horizontalDirection;
+            }
+            else
+            {
+                //Climbing
+                direction = horizontalDirection + verticalDirectionAlongWall;
+            }
 
             //Move along the wall
-            TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + lookDirectionAlongWall * 2.0f;
-            ApplyAccelerationOverTime(lookDirectionAlongWall, delta);
+            TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction * 2.0f;
+            ApplyAccelerationOverTime(direction, delta);
 
 
 
