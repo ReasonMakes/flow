@@ -139,11 +139,13 @@ ScreenEffects = NodePath("UI/ScreenEffects")
 Foley = NodePath("Foley")
 LabelTimer = NodePath("UI/HUD/Top/LabelTimer")
 
-[node name="Movement" type="CharacterBody3D" parent="Player" node_paths=PackedStringArray("CameraPlayer", "Player", "TestVectorBox", "ColliderCapsule", "ColliderSphere")]
+[node name="Movement" type="CharacterBody3D" parent="Player" node_paths=PackedStringArray("CameraPlayer", "Player", "TestVectorBox", "SpinBoxSensitivity", "HSliderSensitivity", "ColliderCapsule", "ColliderSphere")]
 script = ExtResource("3_3qxmi")
 CameraPlayer = NodePath("Camera3D")
 Player = NodePath("..")
 TestVectorBox = NodePath("../../CSGBox3D")
+SpinBoxSensitivity = NodePath("../UI/Menu/VBoxContainer/Sensitivity/Adjusters/SpinBoxSensitivity")
+HSliderSensitivity = NodePath("../UI/Menu/VBoxContainer/Sensitivity/Adjusters/HSliderSensitivity")
 ColliderCapsule = NodePath("ColliderCapsule")
 ColliderSphere = NodePath("ColliderSphere")
 
@@ -491,21 +493,36 @@ layout_mode = 2
 size_flags_horizontal = 3
 button_pressed = true
 
-[node name="DirectionalShadowSize" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer"]
+[node name="Sensitivity" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="Player/UI/Menu/VBoxContainer/DirectionalShadowSize"]
+[node name="Label" type="Label" parent="Player/UI/Menu/VBoxContainer/Sensitivity"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Not assigned"
+text = "Look Sensitivity"
 
-[node name="HSliderShadowSize" type="HSlider" parent="Player/UI/Menu/VBoxContainer/DirectionalShadowSize"]
+[node name="Adjusters" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer/Sensitivity"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpinBoxSensitivity" type="SpinBox" parent="Player/UI/Menu/VBoxContainer/Sensitivity/Adjusters"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.001
+max_value = 1000.0
+step = 0.001
+value = 1.0
+exp_edit = true
+
+[node name="HSliderSensitivity" type="HSlider" parent="Player/UI/Menu/VBoxContainer/Sensitivity/Adjusters"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
-min_value = 8.0
-max_value = 14.0
-value = 12.0
+min_value = 0.001
+max_value = 1000.0
+step = 0.001
+value = 1.0
+exp_edit = true
 
 [node name="Quit" parent="Player/UI/Menu/VBoxContainer" instance=ExtResource("3_6315c")]
 layout_mode = 2
@@ -565,5 +582,6 @@ omni_attenuation = 0.465
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MusicVolume/HSliderMusic" to="Player/UI/Menu" method="OnHSliderMusicValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/UpdateRate/UpdateRateSpinBox" to="." method="OnUpdateRateSpinBoxValueChanged"]
 [connection signal="toggled" from="Player/UI/Menu/VBoxContainer/AntiAliasing/CheckBoxAntiAliasing" to="Player/UI/Menu" method="OnCheckBoxAntiAliasingToggled"]
-[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/DirectionalShadowSize/HSliderShadowSize" to="Player/UI/Menu" method="OnHSliderShadowSizeValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/Sensitivity/Adjusters/SpinBoxSensitivity" to="Player/Movement" method="OnSpinBoxSensitivityValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/Sensitivity/Adjusters/HSliderSensitivity" to="Player/Movement" method="OnHSliderSensitivityValueChanged"]
 [connection signal="pressed" from="Player/UI/Menu/VBoxContainer/Quit" to="Player/UI/Menu" method="OnButtonQuitPressed"]

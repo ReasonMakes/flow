@@ -76,22 +76,4 @@ public partial class Menu : Control
             GetViewport().Msaa3D = Viewport.Msaa.Disabled;
         }
     }
-
-    public void OnHSliderShadowSizeValueChanged(float valRoundedToInt)
-    {
-        int size = (int)valRoundedToInt;
-
-
-    }
-
-    //public void OnHSliderShadowSizeValueChanged(float valRoundedToInt)
-    //{
-    //    //TODO: this doesn't actually update the rendering even though the actual setting is being updated.
-    //    //2^8 is the minimum, 2^12 is default, and max is 2^14
-    //
-    //    int size = (int)Mathf.Pow(2, valRoundedToInt);
-    //    
-    //    ProjectSettings.SetSetting("rendering/lights_and_shadows/directional_shadow/size", size);
-    //    ProjectSettings.Save();
-    //}
 }
