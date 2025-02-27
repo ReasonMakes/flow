@@ -37,5 +37,13 @@ Slide: Run forward until you build up enough speed and then hold the crouch/slid
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+## Third-Party Assets
+The majority of sounds were created in-house by me, ScaleShift. For some examples: to record footsteps, jumping, and landing, I was running around holding my cell phone by my feet. To record sliding, I slid my hand across my desk next to my microphone. Etc.
+
+The sounds which were not recorded in-house were sourced from Freesound.org and have licences compatible with the projects. At the time of writing this preamble, all of these sounds have been nonetheless altered in some way.
+
+    Movement, Wall-run: skateboard grinding on metal rail.wav by 21100495 -- https://freesound.org/s/655371/ -- License: Creative Commons 0
+    Movement, Dash: Woosh_Low_03.wav by moogy73 -- https://freesound.org/s/425699/ -- License: Creative Commons 0
+
 ## Contact
 You can contact me on Discord @scaleshift

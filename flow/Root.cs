@@ -5,7 +5,6 @@ public partial class Root : Node
 {
     [Export] public Player Player;
     [Export] private SpinBox UpdateRateSpinBox;
-    [Export] private AudioStreamPlayer ButtonAudio;
 
     //HARDWARE
     private double FPSAverageSlowPrevious = -1.0;
@@ -88,11 +87,5 @@ public partial class Root : Node
 
             UpdateRateSpinBox.Suffix = $"(Auto: {Engine.MaxFps})";
         }
-    }
-
-    public void OnButtonDown()
-    {
-        GD.Print("Button pressed");
-        ButtonAudio.Play();
     }
 }

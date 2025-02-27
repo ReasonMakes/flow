@@ -42,7 +42,8 @@ public partial class PlayerMovement : CharacterBody3D
     private bool IsClimbing = false;
 
     private const float ClimbVerticalAccelerationCoefficient = 1.33f; //12.5f; //20f; //6f; //Multiple of gravity. Vertical acceleration applied when climbing
-    private const float WallMovementPeriod = 4f; //maximum time in seconds you can perform wall movement for
+    private const float WallMovementPeriod = 4f; //maximum time in seconds you can theoretically perform wall movement for.
+                                                 //Note that you'll be kicked off the wall at around 1/3rd of this value, because the acceleration reduces as exhaustion increases
     private float WallMovementRemaining = 0f; //no touchy :)
     private const float ClimbPenaltyWallJump = 0.5f; //climb time in seconds you lose for wall-bouncing
     private float ClimbReplenishDelay = 0f; //delay in seconds (elapsed when not climbing) until ClimbRemaining can recharge again
@@ -462,7 +463,7 @@ public partial class PlayerMovement : CharacterBody3D
         )
         {
             //Can we do wall movement?
-            if (!IsOnFloor() && IsOnWall() && WallMovementRemaining > 0f)
+            if (IsOnWall() && WallMovementRemaining > 0f)
             {
                 //Are we trying to move along the wall?
                 Vector3 wallNormal = GetWallNormal();
@@ -501,11 +502,15 @@ public partial class PlayerMovement : CharacterBody3D
 
                         //Tire
                         WallMovementRemaining = Mathf.Max(WallMovementRemaining - delta, 0f);
+
+                        //Move along the wall
+                        TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction.Normalized() * 2.0f;
+                        finalMoveOnWallVector += GetVectorAlignedJerked(delta, direction, acceleration, jerkCoefficient);
                     }
                     else
                     {
-                        //Climbing
-                        IsClimbing = true;
+                        //Climb logic
+                        //Not wallrunning
                         IsWallRunning = false;
 
                         //Get climb vector
@@ -513,30 +518,22 @@ public partial class PlayerMovement : CharacterBody3D
                         jerkCoefficient = 1f;
                         acceleration = (WallMovementRemaining / WallMovementPeriod) * ClimbVerticalAccelerationCoefficient * GetGravity().Length();
 
-                        //Tire
-                        WallMovementRemaining = Mathf.Max(WallMovementRemaining - delta, 0f);
+                        //Stop climbing if it's a losing battle with gravity
+                        if (acceleration >= GetGravity().Length())
+                        {
+                            //Climbing
+                            IsClimbing = true;
+
+                            //Tire
+                            WallMovementRemaining = Mathf.Max(WallMovementRemaining - delta, 0f);
+
+                            //Move along the wall
+                            TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction.Normalized() * 2.0f;
+                            finalMoveOnWallVector += GetVectorAlignedJerked(delta, direction, acceleration, jerkCoefficient);
+                        }
                     }
 
-                    //Move along the wall
-                    TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction.Normalized() * 2.0f;
-                    finalMoveOnWallVector += GetVectorAlignedJerked(delta, direction, acceleration, jerkCoefficient);
-
-                    //Wall jump
-                    if (
-                        InputTechJump
-                        && JumpFatigueRecencyTimer >= JumpCooldown
-                    )
-                    {
-                        //Jump up and away from the wall
-                        Jump((wallNormal + wallNormal + verticalDirectionAlongWall).Normalized(), WallJumpAcceleration);
-
-                        //Reset timers
-                        JumpFatigueOnGroundTimer = Mathf.Max(JumpFatigueOnGroundTimer / 2f, JumpFatigueMinimumCoefficient);
-                        JumpFatigueRecencyTimer = 0f;
-
-                        //Tire
-                        WallMovementRemaining = Mathf.Max(WallMovementRemaining - ClimbPenaltyWallJump, 0f);
-                    }
+                    ProcessWallJump(wallNormal, verticalDirectionAlongWall);
                 }
                 else
                 {
@@ -613,6 +610,26 @@ public partial class PlayerMovement : CharacterBody3D
         }
 
         return finalMoveOnWallVector;
+    }
+
+    private void ProcessWallJump(Vector3 wallNormal, Vector3 verticalDirectionAlongWall)
+    {
+        //Wall jump
+        if (
+            InputTechJump
+            && JumpFatigueRecencyTimer >= JumpCooldown
+        )
+        {
+            //Jump up and away from the wall
+            Jump((wallNormal + wallNormal + verticalDirectionAlongWall).Normalized(), WallJumpAcceleration);
+
+            //Reset timers
+            JumpFatigueOnGroundTimer = Mathf.Max(JumpFatigueOnGroundTimer / 2f, JumpFatigueMinimumCoefficient);
+            JumpFatigueRecencyTimer = 0f;
+
+            //Tire
+            WallMovementRemaining = Mathf.Max(WallMovementRemaining - ClimbPenaltyWallJump, 0f);
+        }
     }
 
     private void ProcessJumpFromGround(float delta)

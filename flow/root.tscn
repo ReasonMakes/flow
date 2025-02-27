@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://player/ScreenEffects.cs" id="4_el1a1"]
 [ext_resource type="Script" path="res://UI/HUD.cs" id="4_q5fo1"]
 [ext_resource type="AudioStream" uid="uid://hodl8hno857r" path="res://player/sound/footstep/footstep1.mp3" id="5_e32br"]
+[ext_resource type="AudioStream" uid="uid://biixfddetbaa4" path="res://player/sound/dash/dash.mp3" id="5_kyjnb"]
 [ext_resource type="AudioStream" uid="uid://dxs4aruivw85i" path="res://player/sound/wallrun/wallrun.mp3" id="6_64o50"]
 [ext_resource type="AudioStream" uid="uid://dl8v7c7vcxmla" path="res://player/sound/footstep/footstep2.mp3" id="6_ywgcq"]
 [ext_resource type="AudioStream" uid="uid://bh846lvaxekpv" path="res://player/sound/footstep/footstep3.mp3" id="7_fklhd"]
@@ -27,7 +28,6 @@
 [ext_resource type="AudioStream" uid="uid://c570dnuxckjdc" path="res://player/sound/slide/slide2.mp3" id="18_cmg3g"]
 [ext_resource type="AudioStream" uid="uid://b81kwxv53i8ln" path="res://player/sound/slide/slide3.mp3" id="19_rthxu"]
 [ext_resource type="AudioStream" uid="uid://cqmd2xmqbuyvb" path="res://player/sound/slide/slide4.mp3" id="20_km2s8"]
-[ext_resource type="AudioStream" uid="uid://hhvwrtbppgwu" path="res://C4_sine.mp3" id="22_jv4rj"]
 [ext_resource type="Texture2D" uid="uid://dr3pkqwhc2g2p" path="res://map/floor_albedo.png" id="29_mk3ig"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fdpyu"]
@@ -116,11 +116,10 @@ uv1_scale = Vector3(6, 6, 6)
 albedo_texture = ExtResource("29_mk3ig")
 uv1_scale = Vector3(80, 18, 0)
 
-[node name="Root" type="Node3D" node_paths=PackedStringArray("Player", "UpdateRateSpinBox", "ButtonAudio")]
+[node name="Root" type="Node3D" node_paths=PackedStringArray("Player", "UpdateRateSpinBox")]
 script = ExtResource("1_vrp4g")
 Player = NodePath("Player")
 UpdateRateSpinBox = NodePath("Player/UI/Menu/VBoxContainer/UpdateRate/UpdateRateSpinBox")
-ButtonAudio = NodePath("AudioStreamPlayer")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_qedk2")
@@ -207,8 +206,10 @@ max_polyphony = 4
 bus = &"Foley"
 
 [node name="Dash" type="AudioStreamPlayer" parent="Player/Foley"]
-stream = ExtResource("22_jv4rj")
+stream = ExtResource("5_kyjnb")
 bus = &"Foley"
+
+[node name="AirDrag" type="AudioStreamPlayer" parent="Player/Foley"]
 
 [node name="Music" type="Node" parent="Player"]
 
@@ -495,7 +496,8 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="Player/UI/Menu/VBoxContainer/DirectionalShadowSize"]
 layout_mode = 2
-text = "Directional Shadow Size"
+size_flags_horizontal = 3
+text = "Not assigned"
 
 [node name="HSliderShadowSize" type="HSlider" parent="Player/UI/Menu/VBoxContainer/DirectionalShadowSize"]
 layout_mode = 2
@@ -558,15 +560,6 @@ shadow_enabled = true
 omni_range = 38.66
 omni_attenuation = 0.465
 
-[node name="Button" type="Button" parent="."]
-offset_left = 169.615
-offset_right = 349.29
-offset_bottom = 31.0
-text = "Audio test"
-
-[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("22_jv4rj")
-
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MainVolume/HSliderMain" to="Player/UI/Menu" method="OnHSliderMainValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/FoleyVolume/HSliderFoley" to="Player/UI/Menu" method="OnHSliderFoleyValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MusicVolume/HSliderMusic" to="Player/UI/Menu" method="OnHSliderMusicValueChanged"]
@@ -574,4 +567,3 @@ stream = ExtResource("22_jv4rj")
 [connection signal="toggled" from="Player/UI/Menu/VBoxContainer/AntiAliasing/CheckBoxAntiAliasing" to="Player/UI/Menu" method="OnCheckBoxAntiAliasingToggled"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/DirectionalShadowSize/HSliderShadowSize" to="Player/UI/Menu" method="OnHSliderShadowSizeValueChanged"]
 [connection signal="pressed" from="Player/UI/Menu/VBoxContainer/Quit" to="Player/UI/Menu" method="OnButtonQuitPressed"]
-[connection signal="button_down" from="Button" to="." method="OnButtonDown"]
