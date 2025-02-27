@@ -41,12 +41,12 @@ public partial class PlayerMovement : CharacterBody3D
     //CLIMB/WALL-JUMPING/WALL-RUNNING
     private bool IsClimbing = false;
 
-    private const float ClimbAccelerationGravityCoefficient = 1.33f; //12.5f; //20f; //6f; //Multiple of gravity. Vertical acceleration applied when climbing
-    private const float ClimbPeriod = 4f; //maximum time in seconds you can perform wall movement for
-    private float ClimbRemaining = 0f; //no touchy :)
+    private const float ClimbVerticalAccelerationCoefficient = 1.33f; //12.5f; //20f; //6f; //Multiple of gravity. Vertical acceleration applied when climbing
+    private const float WallMovementPeriod = 4f; //maximum time in seconds you can perform wall movement for
+    private float WallMovementRemaining = 0f; //no touchy :)
     private const float ClimbPenaltyWallJump = 0.5f; //climb time in seconds you lose for wall-bouncing
     private float ClimbReplenishDelay = 0f; //delay in seconds (elapsed when not climbing) until ClimbRemaining can recharge again
-    private const float ClimbRestCoefficient = 10f; //how many times faster climb replenishes than tires
+    private const float WallMovementRestCoefficient = 10f; //how many times faster climb replenishes than tires
 
     private bool IsClimbRested = false; //no touchy :) Can't climb after jumping off until landing on the ground again
 
@@ -56,7 +56,7 @@ public partial class PlayerMovement : CharacterBody3D
     private float WallRunAccelerationCoefficient = 1f; //horizontal acceleration multiplier applied when wall-running
     private const float WallDragCoefficient = 1f;
 
-    private const float ClimbCoefficientWallRunVerticalAcceleration = 1.25f; //1.5f; //Multiple of gravity, proportional to climb remaining. Vertical acceleration applied when wall-running
+    private const float WallRunVerticalAccelerationCoefficient = 1.25f; //1.5f; //Multiple of gravity, proportional to climb remaining. Vertical acceleration applied when wall-running
     
 
 
@@ -215,7 +215,6 @@ public partial class PlayerMovement : CharacterBody3D
     private void ApplyAccelerationAndDragOverTime(Vector3 acceleration, float delta)
     {
         //DON'T MULTIPLY BY DELTA IN THE ACCELERATION ARGUMENT OF THIS METHOD!
-
         //Correct example usage:
         //float magnitude = 10f;
         //Vector3 direction = -GlobalBasis.Z;
@@ -395,9 +394,7 @@ public partial class PlayerMovement : CharacterBody3D
             Vector3 dashDirection = wishDirection.Length() == 0f ? -GlobalBasis.Z : wishDirection;
 
             //Add vector to velocity
-            //ApplyAcceleration(dashDirection * dashMagnitude, delta);
             Velocity += dashDirection * DashAcceleration;
-            //Velocity += dashDirection * dashMagnitude;
 
             //Reset cooldown
             DashCooldown = DashCooldownPeriod;
@@ -442,8 +439,6 @@ public partial class PlayerMovement : CharacterBody3D
 
     private Vector3 ProcessMovementAndGetVector(float delta)
     {
-        //TODO: Refactor ClimbRemaining to WallMovementRemaining
-
         //Get the camera-forward direction
         Vector3 wishDirection = GetWishDirection(CameraPlayer.GlobalTransform.Basis);
 
@@ -456,9 +451,9 @@ public partial class PlayerMovement : CharacterBody3D
         //Rest
         if (IsOnFloor())
         {
-            ClimbRemaining = Mathf.Min(ClimbRemaining + (delta * ClimbRestCoefficient), ClimbPeriod);
+            WallMovementRemaining = Mathf.Min(WallMovementRemaining + (delta * WallMovementRestCoefficient), WallMovementPeriod);
         }
-        Player.Statistics.LabelClimb.Text = $"Climb: {ClimbRemaining:F2}, CanClimb: {IsClimbRested}";
+        Player.Statistics.LabelClimb.Text = $"Climb: {WallMovementRemaining:F2}, CanClimb: {IsClimbRested}";
 
         //Do we WANT to do movement?
         if (
@@ -467,7 +462,7 @@ public partial class PlayerMovement : CharacterBody3D
         )
         {
             //Can we do wall movement?
-            if (!IsOnFloor() && IsOnWall() && ClimbRemaining > 0f)
+            if (!IsOnFloor() && IsOnWall() && WallMovementRemaining > 0f)
             {
                 //Are we trying to move along the wall?
                 Vector3 wallNormal = GetWallNormal();
@@ -502,10 +497,10 @@ public partial class PlayerMovement : CharacterBody3D
                         jerkCoefficient = RunJerkMagnitude;
 
                         //Add vertical direction directly to prevent slipping off the wall
-                        finalMoveOnWallVector += verticalDirectionAlongWall.Normalized() * ((ClimbRemaining / ClimbPeriod) * ClimbCoefficientWallRunVerticalAcceleration * GetGravity().Length());
+                        finalMoveOnWallVector += verticalDirectionAlongWall.Normalized() * ((WallMovementRemaining / WallMovementPeriod) * WallRunVerticalAccelerationCoefficient * GetGravity().Length());
 
                         //Tire
-                        ClimbRemaining = Mathf.Max(ClimbRemaining - delta, 0f);
+                        WallMovementRemaining = Mathf.Max(WallMovementRemaining - delta, 0f);
                     }
                     else
                     {
@@ -516,10 +511,10 @@ public partial class PlayerMovement : CharacterBody3D
                         //Get climb vector
                         direction = (horizontalDirection + verticalDirectionAlongWall).Normalized();
                         jerkCoefficient = 1f;
-                        acceleration = (ClimbRemaining / ClimbPeriod) * ClimbAccelerationGravityCoefficient * GetGravity().Length();
+                        acceleration = (WallMovementRemaining / WallMovementPeriod) * ClimbVerticalAccelerationCoefficient * GetGravity().Length();
 
                         //Tire
-                        ClimbRemaining = Mathf.Max(ClimbRemaining - delta, 0f);
+                        WallMovementRemaining = Mathf.Max(WallMovementRemaining - delta, 0f);
                     }
 
                     //Move along the wall
@@ -540,7 +535,7 @@ public partial class PlayerMovement : CharacterBody3D
                         JumpFatigueRecencyTimer = 0f;
 
                         //Tire
-                        ClimbRemaining = Mathf.Max(ClimbRemaining - ClimbPenaltyWallJump, 0f);
+                        WallMovementRemaining = Mathf.Max(WallMovementRemaining - ClimbPenaltyWallJump, 0f);
                     }
                 }
                 else
