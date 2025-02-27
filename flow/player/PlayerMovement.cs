@@ -7,11 +7,7 @@ public partial class PlayerMovement : CharacterBody3D
     [Export] private Player Player;
     [Export] private CsgBox3D TestVectorBox;
 
-    [Export] SpinBox SpinBoxSensitivity;
-    [Export] HSlider HSliderSensitivity;
-    private bool internalSensitivityUpdate = false;
-    
-    private float MouseSensitivity = 0.001f;
+    public float MouseSensitivity = 0.001f;
 
     private bool IsInAir = false;
 
@@ -134,34 +130,6 @@ public partial class PlayerMovement : CharacterBody3D
                 CameraPlayer.Rotation.Y,
                 CameraPlayer.Rotation.Z
             );
-        }
-    }
-
-    public void OnSpinBoxSensitivityValueChanged(float val)
-    {
-        if (!internalSensitivityUpdate)
-        {
-            MouseSensitivity = val / 1000f;
-            internalSensitivityUpdate = true;
-            HSliderSensitivity.Value = MouseSensitivity * 1000f;
-        }
-        else
-        {
-            internalSensitivityUpdate = false;
-        }
-    }
-
-    public void OnHSliderSensitivityValueChanged(float val)
-    {
-        if (!internalSensitivityUpdate)
-        {
-            MouseSensitivity = val / 1000f;
-            internalSensitivityUpdate = true;
-            SpinBoxSensitivity.Value = MouseSensitivity * 1000f;
-        }
-        else
-        {
-            internalSensitivityUpdate = false;
         }
     }
 

@@ -4,7 +4,11 @@ using System;
 public partial class Menu : Control
 {
     [Export] private Button ButtonQuit;
-    [Export] private DirectionalLight3D sun;
+
+    [Export] PlayerMovement PlayerMovement;
+    [Export] SpinBox SpinBoxSensitivity;
+    [Export] HSlider HSliderSensitivity;
+    private bool internalSensitivityUpdate = false;
 
     public override void _Ready()
     {
@@ -74,6 +78,34 @@ public partial class Menu : Control
         else
         {
             GetViewport().Msaa3D = Viewport.Msaa.Disabled;
+        }
+    }
+
+    public void OnSpinBoxSensitivityValueChanged(float val)
+    {
+        if (!internalSensitivityUpdate)
+        {
+            PlayerMovement.MouseSensitivity = val / 1000f;
+            internalSensitivityUpdate = true;
+            HSliderSensitivity.Value = PlayerMovement.MouseSensitivity * 1000f;
+        }
+        else
+        {
+            internalSensitivityUpdate = false;
+        }
+    }
+
+    public void OnHSliderSensitivityValueChanged(float val)
+    {
+        if (!internalSensitivityUpdate)
+        {
+            PlayerMovement.MouseSensitivity = val / 1000f;
+            internalSensitivityUpdate = true;
+            SpinBoxSensitivity.Value = PlayerMovement.MouseSensitivity * 1000f;
+        }
+        else
+        {
+            internalSensitivityUpdate = false;
         }
     }
 }

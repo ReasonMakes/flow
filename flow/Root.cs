@@ -78,14 +78,14 @@ public partial class Root : Node
             Engine.MaxFps = FPSUserMax;
             Engine.PhysicsTicksPerSecond = FPSUserMax;
 
-            UpdateRateSpinBox.Suffix = "";
+            UpdateRateSpinBox.Suffix = "Hz";
         }
         else
         {
             //Automatic update rate
             Engine.MaxFps = (int)DisplayServer.ScreenGetRefreshRate();
 
-            UpdateRateSpinBox.Suffix = $"(Auto: {Engine.MaxFps})";
+            UpdateRateSpinBox.Suffix = $"(Auto: {Engine.MaxFps} Hz)";
         }
     }
 }
