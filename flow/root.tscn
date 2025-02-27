@@ -1,4 +1,4 @@
-[gd_scene load_steps=45 format=3 uid="uid://wfhvshehcqq7"]
+[gd_scene load_steps=46 format=3 uid="uid://wfhvshehcqq7"]
 
 [ext_resource type="Script" path="res://Root.cs" id="1_vrp4g"]
 [ext_resource type="Script" path="res://UI/menu/Menu.cs" id="2_esyfm"]
@@ -94,11 +94,15 @@ stream_3/stream = ExtResource("20_km2s8")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6s616"]
 albedo_texture = ExtResource("29_mk3ig")
-uv1_scale = Vector3(100, 100, 100)
+uv1_scale = Vector3(200, 200, 200)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r6x8e"]
 albedo_texture = ExtResource("29_mk3ig")
 uv1_scale = Vector3(2, 2, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yxnl0"]
+albedo_texture = ExtResource("29_mk3ig")
+uv1_scale = Vector3(50, 50, 50)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ejnov"]
 albedo_texture = ExtResource("29_mk3ig")
@@ -512,7 +516,7 @@ use_collision = true
 
 [node name="Floor" type="CSGBox3D" parent="Map/Greybox"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -25)
-size = Vector3(100, 1, 100)
+size = Vector3(200, 1, 200)
 material = SubResource("StandardMaterial3D_6s616")
 
 [node name="CSGBox" type="CSGBox3D" parent="Map/Greybox"]
@@ -521,9 +525,9 @@ size = Vector3(2, 2, 2)
 material = SubResource("StandardMaterial3D_r6x8e")
 
 [node name="Wall" type="CSGBox3D" parent="Map/Greybox"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, 0)
-size = Vector3(2, 25, 25)
-material = SubResource("StandardMaterial3D_ejnov")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, -67)
+size = Vector3(2, 50, 50)
+material = SubResource("StandardMaterial3D_yxnl0")
 
 [node name="WallSlanted" type="CSGBox3D" parent="Map/Greybox"]
 transform = Transform3D(-5.96046e-08, 0, -1, 0.258819, 0.965926, -1.54268e-08, 0.965926, -0.258819, -5.75737e-08, -2, 1, 20)
@@ -531,18 +535,18 @@ size = Vector3(2, 25, 25)
 material = SubResource("StandardMaterial3D_ejnov")
 
 [node name="CSGBox2" type="CSGBox3D" parent="Map/Greybox"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3, -20)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3, -38)
 size = Vector3(6, 6, 6)
 material = SubResource("StandardMaterial3D_o5i7u")
 
 [node name="CSGSphere3D" type="CSGSphere3D" parent="Map/Greybox"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 7, -13)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 7, -31)
 radius = 5.0
 radial_segments = 20
 rings = 12
 
 [node name="CSGCylinder3D" type="CSGCylinder3D" parent="Map/Greybox"]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, -15, 10, -47)
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, -24, 10, -6)
 radius = 17.0
 height = 38.0
 sides = 40

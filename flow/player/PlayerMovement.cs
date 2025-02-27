@@ -43,11 +43,12 @@ public partial class PlayerMovement : CharacterBody3D
 
     private const float ClimbOrWallrunMinSpeed = 1f; //Minimum speed to be able to climb or wallrun
 
-    private const float ClimbAccelerationGravityCoefficient = 1f; //12.5f; //20f; //6f; //Multiple of gravity. Vertical acceleration applied when climbing
-    private const float ClimbPeriod = 2f; //time in seconds you can accelerate upwards on the wall for
-    private float ClimbRemaining = 2f; //no touchy :)
+    private const float ClimbAccelerationGravityCoefficient = 1.33f; //12.5f; //20f; //6f; //Multiple of gravity. Vertical acceleration applied when climbing
+    private const float ClimbPeriod = 4f; //maximum time in seconds you can perform wall movement for
+    private float ClimbRemaining = 0f; //no touchy :)
     private const float ClimbPenaltyWallJump = 0.5f; //climb time in seconds you lose for wall-bouncing
     private float ClimbReplenishDelay = 0f; //delay in seconds (elapsed when not climbing) until ClimbRemaining can recharge again
+    private const float ClimbRestCoefficient = 10f; //how many times faster climb replenishes than tires
 
     private bool IsClimbRested = false; //no touchy :) Can't climb after jumping off until landing on the ground again
 
@@ -55,8 +56,10 @@ public partial class PlayerMovement : CharacterBody3D
 
     private bool IsWallRunning = false;
     private float WallRunAccelerationCoefficient = 1f; //horizontal acceleration multiplier applied when wall-running
-    private const float ClimbCoefficientWallRunVerticalAcceleration = 0.25f; //1.5f; //Multiple of gravity, proportional to climb remaining. Vertical acceleration applied when wall-running
-    private const float WallDragCoefficient = 0.8f;
+    private const float WallDragCoefficient = 1f;
+
+    private const float ClimbCoefficientWallRunVerticalAcceleration = 1.25f; //1.5f; //Multiple of gravity, proportional to climb remaining. Vertical acceleration applied when wall-running
+    
 
 
     //JUMP
@@ -204,24 +207,8 @@ public partial class PlayerMovement : CharacterBody3D
         ProcessJumpFromGround(delta);
 
         //ACCELERATION/TIME
-        //Gravity
-        Vector3 accelerationVector = GetGravity();
-
-        //Wall movement
-        Vector3 moveOnWallVector = MoveOnWall(delta);
-        accelerationVector += moveOnWallVector;
-
-        //Running
-        Vector3 moveRunVector = Run(delta);
-        if (
-               moveOnWallVector == Vector3.Zero                            //no wish direction on wall
-            || moveOnWallVector.Normalized() == moveRunVector.Normalized() //same direction
-        )
-        {
-            accelerationVector += moveRunVector;
-        }
-
-        ApplyAccelerationAndDragOverTime(accelerationVector, delta);
+        ApplyAccelerationAndDragOverTime(ProcessMovementAndGetVector(delta) + GetGravity(), delta);
+        Player.Statistics.LabelHSpeed.Text = $"HSpeed: {new Vector3(Velocity.X, 0f, Velocity.Z).Length():F2}";
 
         //APPLY
         MoveAndSlide();
@@ -261,13 +248,14 @@ public partial class PlayerMovement : CharacterBody3D
         if (IsOnFloor())
         {
             //Ground
-            float slidingCoefficient = 1f;
             if (IsSliding)
             {
-                slidingCoefficient = RunDragSlidingCoefficient;
+                dragComponent = RunDragGround * RunDragSlidingCoefficient;
             }
-
-            dragComponent = RunDragGround * slidingCoefficient;
+            else
+            {
+                dragComponent = RunDragGround;
+            }
         }
         else if (IsWallRunning)
         {
@@ -276,7 +264,7 @@ public partial class PlayerMovement : CharacterBody3D
         }
         else
         {
-            //Air
+            //Air or climbing
             dragComponent = RunDragGround * RunDragAirCoefficient;
         }
 
@@ -329,7 +317,7 @@ public partial class PlayerMovement : CharacterBody3D
         }
         //--
 
-        float jerkCoefficient = (IsOnFloor() || IsOnWall()) ? RunJerkMagnitude : 1f;
+        float jerkCoefficient = IsOnFloor() ? RunJerkMagnitude : 1f;
         return GetVectorAlignedJerked(delta, wishDirection, RunAcceleration, jerkCoefficient);
         //ApplyAccelerationOverTime(GetVectorAlignedJerked(delta, wishDirection), delta);
     }
@@ -343,7 +331,6 @@ public partial class PlayerMovement : CharacterBody3D
 
         //+ if aligned, - if opposite, 0 if perpendicular
         Vector3 velocityHorizontal = new(Velocity.X, 0f, Velocity.Z);
-        Player.Statistics.LabelHSpeed.Text = $"HSpeed: {velocityHorizontal.Length():F2}";
         float runAlignment = velocityHorizontal.Dot(wishDirection);
 
         //Gradient value from 0 to 1, with:
@@ -389,7 +376,7 @@ public partial class PlayerMovement : CharacterBody3D
             //Decrement
             RunJerkDevelopment = Mathf.Max(
                 RunJerkDevelopment - (decayRate * delta),
-                1f
+                2f
             );
         }
 
@@ -459,128 +446,173 @@ public partial class PlayerMovement : CharacterBody3D
         return wishDirection.Normalized();
     }
 
-    private Vector3 MoveOnWall(float delta)
+    private Vector3 ProcessMovementAndGetVector(float delta)
     {
-        Vector3 finalMoveOnWallVector = Vector3.Zero;
+        //TODO: Refactor ClimbRemaining to WallMovementRemaining
 
         //Get the camera-forward direction
         Vector3 wishDirection = GetWishDirection(CameraPlayer.GlobalTransform.Basis);
 
-        if (IsOnWall() && (InputRunForward || InputRunLeft || InputRunRight || InputRunBack))
+        //Default values
+        Vector3 finalMoveOnWallVector = Vector3.Zero;
+        IsWallRunning = false;
+        IsClimbing = false;
+        TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + wishDirection * 2.0f;
+
+        //Rest
+        if (IsOnFloor())
         {
-            //Only allow climbing or wall running if:
-            //IsOnWall() && InputRunForward && ClimbRemaining > 0f && IsClimbRested;
+            ClimbRemaining = Mathf.Min(ClimbRemaining + (delta * ClimbRestCoefficient), ClimbPeriod);
+        }
+        Player.Statistics.LabelClimb.Text = $"Climb: {ClimbRemaining:F2}, CanClimb: {IsClimbRested}";
 
-            //Are we trying to move along the wall?
-            Vector3 wallNormal = GetWallNormal();
-            float wallDot = wishDirection.Dot(wallNormal);
-            if (wallDot <= 0f) {
-                //(Relative to wall) Remove the component that points into the wall - this gives us a vector along the wall that is 0 if we look straight at the wall
-                Vector3 lookDirectionAlongWall = wishDirection - (wishDirection.Dot(wallNormal) * wallNormal);
-
-                //For wallrunning AND climbing
-                //Isolate horizontal component
-                Vector3 horizontalDirection = lookDirectionAlongWall - (lookDirectionAlongWall.Dot(Vector3.Up) * Vector3.Up);
-
-                //For climbing ONLY
-                //Get the vertical direction along the wall - if the wall is slanted, this points up along the slant
-                Vector3 wallTangent = wallNormal.Cross(Vector3.Up);
-                Vector3 verticalDirectionAlongWall = wallTangent.Cross(wallNormal).Normalized();
-
-                //Combine these two components based on whether looking sideways along the wall
-                Vector3 direction;
-                float acceleration;
-                float jerkCoefficient;
-                if (horizontalDirection.Dot(-CameraPlayer.GlobalTransform.Basis.Z) > 0.75f)
+        //Do we WANT to do movement?
+        if (
+            InputRunForward || InputRunLeft || InputRunRight || InputRunBack
+            || InputTechJump
+        )
+        {
+            //Can we do wall movement?
+            if (!IsOnFloor() && IsOnWall() && ClimbRemaining > 0f)
+            {
+                //Are we trying to move along the wall?
+                Vector3 wallNormal = GetWallNormal();
+                float wallDot = wishDirection.Dot(wallNormal);
+                if (wallDot <= 0f)
                 {
-                    //Wallrunning
-                    IsWallRunning = true;
-                    IsClimbing = false;
+                    //(Relative to wall) Remove the component that points into the wall - this gives us a vector along the wall that is 0 if we look straight at the wall
+                    Vector3 lookDirectionAlongWall = wishDirection - (wishDirection.Dot(wallNormal) * wallNormal);
 
-                    direction = horizontalDirection.Normalized();
-                    acceleration = RunAcceleration * WallRunAccelerationCoefficient;
-                    jerkCoefficient = RunJerkMagnitude;
+                    //For wallrunning AND climbing
+                    //Isolate horizontal component
+                    Vector3 horizontalDirection = lookDirectionAlongWall - (lookDirectionAlongWall.Dot(Vector3.Up) * Vector3.Up);
+
+                    //For climbing and wall JUMPING
+                    //Get the vertical direction along the wall - if the wall is slanted, this points up along the slant
+                    Vector3 wallTangent = wallNormal.Cross(Vector3.Up);
+                    Vector3 verticalDirectionAlongWall = wallTangent.Cross(wallNormal).Normalized();
+
+                    //Combine these two components based on whether looking sideways along the wall
+                    Vector3 direction;
+                    float acceleration;
+                    float jerkCoefficient;
+                    if (horizontalDirection.Dot(-CameraPlayer.GlobalTransform.Basis.Z) > 0.75f)
+                    {
+                        //Wallrunning
+                        IsWallRunning = true;
+                        IsClimbing = false;
+
+                        //Get wallrun vector
+                        direction = horizontalDirection.Normalized();
+                        acceleration = RunAcceleration * WallRunAccelerationCoefficient;
+                        jerkCoefficient = RunJerkMagnitude;
+
+                        //Add vertical direction directly to prevent slipping off the wall
+                        finalMoveOnWallVector += verticalDirectionAlongWall.Normalized() * ((ClimbRemaining / ClimbPeriod) * ClimbCoefficientWallRunVerticalAcceleration * GetGravity().Length());
+
+                        //Tire
+                        ClimbRemaining = Mathf.Max(ClimbRemaining - delta, 0f);
+                    }
+                    else
+                    {
+                        //Climbing
+                        IsClimbing = true;
+                        IsWallRunning = false;
+
+                        //Get climb vector
+                        direction = (horizontalDirection + verticalDirectionAlongWall).Normalized();
+                        jerkCoefficient = 1f;
+                        acceleration = (ClimbRemaining / ClimbPeriod) * ClimbAccelerationGravityCoefficient * GetGravity().Length();
+
+                        //Tire
+                        ClimbRemaining = Mathf.Max(ClimbRemaining - delta, 0f);
+                    }
+
+                    //Move along the wall
+                    TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction.Normalized() * 2.0f;
+                    finalMoveOnWallVector += GetVectorAlignedJerked(delta, direction, acceleration, jerkCoefficient);
+
+                    //Wall jump
+                    if (
+                        InputTechJump
+                        && JumpFatigueRecencyTimer >= JumpCooldown
+                    )
+                    {
+                        //Jump up and away from the wall
+                        Jump((wallNormal + wallNormal + verticalDirectionAlongWall).Normalized(), WallJumpAcceleration);
+
+                        //Reset timers
+                        JumpFatigueOnGroundTimer = Mathf.Max(JumpFatigueOnGroundTimer / 2f, JumpFatigueMinimumCoefficient);
+                        JumpFatigueRecencyTimer = 0f;
+
+                        //Tire
+                        ClimbRemaining = Mathf.Max(ClimbRemaining - ClimbPenaltyWallJump, 0f);
+                    }
                 }
                 else
                 {
-                    //Climbing
-                    IsClimbing = true;
-                    IsWallRunning = false;
-
-                    direction = (horizontalDirection + verticalDirectionAlongWall).Normalized();
-                    jerkCoefficient = 1f;
-                    acceleration = ClimbAccelerationGravityCoefficient * GetGravity().Length();
+                    finalMoveOnWallVector = Run(delta);
                 }
 
-                //Move along the wall
-                TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction.Normalized() * 2.0f;
-                finalMoveOnWallVector = GetVectorAlignedJerked(delta, direction, acceleration, jerkCoefficient);
 
-                //Wall jump
-                //Jump(verticalDirectionAlongWall, JumpAcceleration);
+
+                ////Climb direction
+                //Vector3 climbDirection = Vector3.Zero;
+                //if (InputRunForward) climbDirection -= GlobalBasis.Z;
+                //if (InputRunLeft) climbDirection -= GlobalBasis.X;
+                //if (InputRunRight) climbDirection += GlobalBasis.X;
+                //if (InputRunBack) climbDirection += GlobalBasis.Z;
+                //climbDirection = climbDirection.Normalized();
+                //
+                //climbDirection = CameraPlayer.GlobalRotation;
+                //
+                ////TestVectorBox.GlobalPosition = GlobalPosition + (climbDirection * 2f) + (Vector3.Up * 2f);
+
+
+
+
+
+                //THIS WORKS but not how we'd like it to, ultimately
+                //This basically rotates your acceleration as if the wall normal is the new ground
+                ////Rotation from (world up) to (the vector of the wall normal)
+                //var rotation = new Quaternion(Vector3.Up, GetWallNormal());
+                //
+                ////Apply the rotation to runVector
+                //Vector3 newRunVector;
+                //if (CameraPlayer.Rotation.X < 0f)
+                //{
+                //    //If we're looking down, then forward should go down (inverted)
+                //    newRunVector = runVector * rotation; //Quaternions are not commutative - this is the inverse
+                //}
+                //else
+                //{
+                //    //If we're looking up, then forward should go up
+                //    newRunVector = rotation * runVector;
+                //}
+                //
+                ////Accelerate along the wall
+                //ApplyAccelerationOverTime(newRunVector, delta);
+
+
+
+
+
+
+                //Vector3 wallNormal = GetWallNormal();
+                //
+                //Vector3 projectedVector = runVector - runVector.Dot(wallNormal) * wallNormal;
+                //
+                //
+                ////Vector3 projectedRunVector = runVector - runVector.Project(GetWallNormal());
+                //
+                ////Vector3 climbDirection = runVector.Normalized() * new Quaternion(GetWallNormal(), 90f);
+                //
+                //ApplyAccelerationOverTime(projectedVector, delta);
             }
-
-
-
-            ////Climb direction
-            //Vector3 climbDirection = Vector3.Zero;
-            //if (InputRunForward) climbDirection -= GlobalBasis.Z;
-            //if (InputRunLeft) climbDirection -= GlobalBasis.X;
-            //if (InputRunRight) climbDirection += GlobalBasis.X;
-            //if (InputRunBack) climbDirection += GlobalBasis.Z;
-            //climbDirection = climbDirection.Normalized();
-            //
-            //climbDirection = CameraPlayer.GlobalRotation;
-            //
-            ////TestVectorBox.GlobalPosition = GlobalPosition + (climbDirection * 2f) + (Vector3.Up * 2f);
-
-
-
-
-
-            //THIS WORKS but not how we'd like it to, ultimately
-            //This basically rotates your acceleration as if the wall normal is the new ground
-            ////Rotation from (world up) to (the vector of the wall normal)
-            //var rotation = new Quaternion(Vector3.Up, GetWallNormal());
-            //
-            ////Apply the rotation to runVector
-            //Vector3 newRunVector;
-            //if (CameraPlayer.Rotation.X < 0f)
-            //{
-            //    //If we're looking down, then forward should go down (inverted)
-            //    newRunVector = runVector * rotation; //Quaternions are not commutative - this is the inverse
-            //}
-            //else
-            //{
-            //    //If we're looking up, then forward should go up
-            //    newRunVector = rotation * runVector;
-            //}
-            //
-            ////Accelerate along the wall
-            //ApplyAccelerationOverTime(newRunVector, delta);
-
-
-
-
-
-
-            //Vector3 wallNormal = GetWallNormal();
-            //
-            //Vector3 projectedVector = runVector - runVector.Dot(wallNormal) * wallNormal;
-            //
-            //
-            ////Vector3 projectedRunVector = runVector - runVector.Project(GetWallNormal());
-            //
-            ////Vector3 climbDirection = runVector.Normalized() * new Quaternion(GetWallNormal(), 90f);
-            //
-            //ApplyAccelerationOverTime(projectedVector, delta);
-        }
-        else
-        {
-            IsWallRunning = false;
-            IsClimbing = false;
-
-            TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + wishDirection * 2.0f;
+            else
+            {
+                finalMoveOnWallVector = Run(delta);
+            }
         }
 
         return finalMoveOnWallVector;
@@ -613,7 +645,7 @@ public partial class PlayerMovement : CharacterBody3D
 
 
 
-
+        
 
 
 
