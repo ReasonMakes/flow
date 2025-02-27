@@ -41,8 +41,6 @@ public partial class PlayerMovement : CharacterBody3D
     //CLIMB/WALL-JUMPING/WALL-RUNNING
     private bool IsClimbing = false;
 
-    private const float ClimbOrWallrunMinSpeed = 1f; //Minimum speed to be able to climb or wallrun
-
     private const float ClimbAccelerationGravityCoefficient = 1.33f; //12.5f; //20f; //6f; //Multiple of gravity. Vertical acceleration applied when climbing
     private const float ClimbPeriod = 4f; //maximum time in seconds you can perform wall movement for
     private float ClimbRemaining = 0f; //no touchy :)
@@ -297,8 +295,6 @@ public partial class PlayerMovement : CharacterBody3D
         //Decrement
         Player.Foley.RunAudioTimer = Mathf.Max(Player.Foley.RunAudioTimer - delta, 0f);
 
-        //GD.Print($"Timer: {Foley.RunAudioTimer}, period: {runAudioTimerPeriod}");
-
         //Play the sound if we're actually running and not sliding or something
         if (
             Player.Foley.RunAudioTimer == 0f
@@ -319,7 +315,6 @@ public partial class PlayerMovement : CharacterBody3D
 
         float jerkCoefficient = IsOnFloor() ? RunJerkMagnitude : 1f;
         return GetVectorAlignedJerked(delta, wishDirection, RunAcceleration, jerkCoefficient);
-        //ApplyAccelerationOverTime(GetVectorAlignedJerked(delta, wishDirection), delta);
     }
 
     private Vector3 GetVectorAlignedJerked(float delta, Vector3 wishDirection, float runDynamicAccelerationTwitch, float jerkCoefficient)
@@ -330,8 +325,7 @@ public partial class PlayerMovement : CharacterBody3D
         //while allowing us to maintain responsive air acceleration
 
         //+ if aligned, - if opposite, 0 if perpendicular
-        Vector3 velocityHorizontal = new(Velocity.X, 0f, Velocity.Z);
-        float runAlignment = velocityHorizontal.Dot(wishDirection);
+        float runAlignment = wishDirection.Dot(new(Velocity.X, 0f, Velocity.Z));
 
         //Gradient value from 0 to 1, with:
         // * 0 if aligned and at max speed,
@@ -376,7 +370,7 @@ public partial class PlayerMovement : CharacterBody3D
             //Decrement
             RunJerkDevelopment = Mathf.Max(
                 RunJerkDevelopment - (decayRate * delta),
-                2f
+                0f
             );
         }
 
@@ -551,264 +545,79 @@ public partial class PlayerMovement : CharacterBody3D
                 }
                 else
                 {
+                    //Running away from the wall
                     finalMoveOnWallVector = Run(delta);
                 }
-
-
-
-                ////Climb direction
-                //Vector3 climbDirection = Vector3.Zero;
-                //if (InputRunForward) climbDirection -= GlobalBasis.Z;
-                //if (InputRunLeft) climbDirection -= GlobalBasis.X;
-                //if (InputRunRight) climbDirection += GlobalBasis.X;
-                //if (InputRunBack) climbDirection += GlobalBasis.Z;
-                //climbDirection = climbDirection.Normalized();
-                //
-                //climbDirection = CameraPlayer.GlobalRotation;
-                //
-                ////TestVectorBox.GlobalPosition = GlobalPosition + (climbDirection * 2f) + (Vector3.Up * 2f);
-
-
-
-
-
-                //THIS WORKS but not how we'd like it to, ultimately
-                //This basically rotates your acceleration as if the wall normal is the new ground
-                ////Rotation from (world up) to (the vector of the wall normal)
-                //var rotation = new Quaternion(Vector3.Up, GetWallNormal());
-                //
-                ////Apply the rotation to runVector
-                //Vector3 newRunVector;
-                //if (CameraPlayer.Rotation.X < 0f)
-                //{
-                //    //If we're looking down, then forward should go down (inverted)
-                //    newRunVector = runVector * rotation; //Quaternions are not commutative - this is the inverse
-                //}
-                //else
-                //{
-                //    //If we're looking up, then forward should go up
-                //    newRunVector = rotation * runVector;
-                //}
-                //
-                ////Accelerate along the wall
-                //ApplyAccelerationOverTime(newRunVector, delta);
-
-
-
-
-
-
-                //Vector3 wallNormal = GetWallNormal();
-                //
-                //Vector3 projectedVector = runVector - runVector.Dot(wallNormal) * wallNormal;
-                //
-                //
-                ////Vector3 projectedRunVector = runVector - runVector.Project(GetWallNormal());
-                //
-                ////Vector3 climbDirection = runVector.Normalized() * new Quaternion(GetWallNormal(), 90f);
-                //
-                //ApplyAccelerationOverTime(projectedVector, delta);
             }
             else
             {
+                //Running on the ground
                 finalMoveOnWallVector = Run(delta);
             }
         }
 
+        //Wall-running camera roll
+        if (IsWallRunning)
+        {
+            if (IsOnWall())
+            {
+                //Set roll
+                CameraPlayer.Rotation = new Vector3(
+                    CameraPlayer.Rotation.X,
+                    CameraPlayer.Rotation.Y,
+                    Mathf.LerpAngle(
+                        CameraPlayer.Rotation.Z,
+                        Mathf.Tau / 16f * Mathf.Sign(GetWallNormal().Dot(-GlobalBasis.X)), //roll rotation
+                        10f * delta //interpolate speed
+                    )
+                );
+            }
+        }
+        else
+        {
+            //Reset roll
+            CameraPlayer.Rotation = new Vector3(
+                CameraPlayer.Rotation.X,
+                CameraPlayer.Rotation.Y,
+                Mathf.LerpAngle(
+                    CameraPlayer.Rotation.Z,
+                    0f, //roll rotation
+                    10f * delta //interpolate speed
+                )
+            );
+        }
+
+        //Audio Climb - repeat one-shots
+        if (IsClimbing && !IsSliding)
+        {
+            if (!Player.Foley.AudioClimb.Playing)
+            {
+                Player.Foley.AudioClimb.Play();
+            }
+        }
+        else
+        {
+            if (Player.Foley.AudioClimb.Playing)
+            {
+                Player.Foley.AudioClimb.Stop();
+            }
+        }
+        //Audio Wall-run - loop fader
+        if (IsWallRunning)
+        {
+            if (!Player.Foley.AudioWallrun.Playing)
+            {
+                Player.Foley.AudioWallrun.Play();
+            }
+
+            Player.Foley.AudioWallrun.VolumeDb = Player.Foley.AudioWallrunVolume;
+        }
+        else
+        {
+            Player.Foley.AudioWallrun.VolumeDb -= Player.Foley.AudioWallrunVolumeFadeOutRate * delta;
+        }
+
         return finalMoveOnWallVector;
-
-
-
-
-
-
-        //if (!IsOnWall())
-        //    return;
-        //
-        //Vector3 wallNormal = GetWallNormal();
-        //
-        ////Project velocity
-        ////Velocity = Velocity - Velocity.Project(wallNormal);
-        //
-        ////Base projected acceleration vector
-        //Vector3 projectedRunVector = runVector - runVector.Project(wallNormal);
-        //
-        ////Vertical component
-        //float climbEnergyCoefficient = (ClimbRemaining / ClimbPeriod);
-        //Vector3 verticalAcceleration = Vector3.Up * (ClimbAcceleration * climbEnergyCoefficient);
-        //
-        ////Combine and apply
-        //Vector3 wallClimbOrRunAcceleration = projectedRunVector + verticalAcceleration;
-        //ApplyAccelerationOverTime(wallClimbOrRunAcceleration, delta);
-
-
-
-
-
-        
-
-
-
-
-
-        ////IsOnFloor()
-        ////IsOnWall()
-        ////InputTechJump
-        //
-        //bool isJumpRested = JumpFatigueRecencyTimer >= JumpCooldown; //can jump
-        //bool isOnWall = !IsOnFloor() && IsOnWall();
-        //
-        //
-        //
-        //
-        //if (IsOnWall())
-        //{
-        //    float dotToWall = GlobalBasis.Z.Dot(GetWallNormal());
-        //    bool isLookingTowardWall = dotToWall > 0f;
-        //
-        //    //Wall jump
-        //    if (
-        //        isLookingTowardWall
-        //        && IsClimbRested
-        //        && isJumpRested
-        //        && InputTechJump
-        //    )
-        //    {
-        //        //Get tired
-        //        ClimbRemaining = Mathf.Max(ClimbRemaining - ClimbPenaltyWallJump, 0f);
-        //        ClimbReplenishDelay += 2f;
-        //
-        //        //Jump up and away from the wall
-        //        Jump((GetWallNormal() + GetWallNormal() + Vector3.Up).Normalized(), WallJumpAcceleration);
-        //    }
-        //}
-        //
-        //
-        //
-        ////Climbing or wall-running
-        //if (IsOnWall() && InputRunForward && !IsSliding && Velocity.Length() > ClimbOrWallrunMinSpeed)
-        //{
-        //    if (IsClimbRested)
-        //    {
-        //        if (ClimbRemaining > 0f)
-        //        {
-        //            float dotToWall = GlobalBasis.Z.Dot(GetWallNormal());
-        //            float dotToWallClamped = Mathf.Max(dotToWall, 0f); // 0 to 1, where 1 is facing the wall
-        //
-        //            //Climb
-        //            //Vector3 climbVector = -GetGravity() * (ClimbAcceleration * (ClimbRemaining / ClimbPeriod) * dotToWallClamped);
-        //            float climbMagnitude = ClimbAcceleration * (ClimbRemaining / ClimbPeriod);
-        //            Vector3 climbVector = runVector.Normalized() * climbMagnitude;
-        //            ApplyAccelerationOverTime(climbVector, delta);
-        //
-        //            //Wall-run
-        //            if (!IsOnFloor() && dotToWallClamped < 0.75f)
-        //            {
-        //                IsWallRunning = true;
-        //
-        //                //Get direction
-        //                Vector3 wallTangent = GetWallNormal().Cross(Vector3.Up); //pretty much all the way there
-        //                Vector3 projectedDirection = (wallTangent * runVector.Dot(wallTangent)).Normalized(); //consider which horizontal direction we're going along the wall
-        //                //testBox.Position = new Vector3(Position.X, Position.Y + 1f, Position.Z) + (2f * projectedDirection);
-        //
-        //                //Horizontal acceleration
-        //                Vector3 wallRunHorizontalVector = projectedDirection * (WallRunAcceleration * (1f - dotToWallClamped));
-        //                ApplyAccelerationOverTime(wallRunHorizontalVector, delta);
-        //
-        //                //Vertical acceleration
-        //                Vector3 wallRunVerticalVector = -GetGravity() * (ClimbAcceleration * ClimbCoefficientWallRunVerticalAcceleration * (ClimbRemaining / ClimbPeriod) * dotToWallClamped);
-        //                ApplyAccelerationOverTime(wallRunVerticalVector, delta);
-        //            }
-        //
-        //            //Decrement
-        //            ClimbRemaining = Mathf.Max(ClimbRemaining - delta, 0f);
-        //        }
-        //        else
-        //        {
-        //            IsClimbRested = false;
-        //        }
-        //    }
-        //}
-        //else
-        //{
-        //    //Reset IsWallRunning boolean
-        //    IsWallRunning = false;
-        //
-        //    if (IsOnFloor() || (IsClimbRested && ClimbReplenishDelay <= 0f))
-        //    {
-        //        //Replenish climb
-        //        ClimbRemaining = Mathf.Min(ClimbRemaining + delta, ClimbPeriod);
-        //    }
-        //    else
-        //    {
-        //        ClimbReplenishDelay = Mathf.Max(ClimbReplenishDelay - delta, 0f);
-        //    }
-        //}
-        //
-        ////Wall-running camera roll
-        //if (IsWallRunning)
-        //{
-        //    if (IsOnWall())
-        //    {
-        //        //Set roll
-        //        CameraPlayer.Rotation = new Vector3(
-        //            CameraPlayer.Rotation.X,
-        //            CameraPlayer.Rotation.Y,
-        //            Mathf.LerpAngle(
-        //                CameraPlayer.Rotation.Z,
-        //                Mathf.Tau / 16f * Mathf.Sign(GetWallNormal().Dot(-GlobalBasis.X)), //roll rotation
-        //                10f * delta //interpolate speed
-        //            )
-        //        );
-        //    }
-        //}
-        //else
-        //{
-        //    //Reset roll
-        //    CameraPlayer.Rotation = new Vector3(
-        //        CameraPlayer.Rotation.X,
-        //        CameraPlayer.Rotation.Y,
-        //        Mathf.LerpAngle(
-        //            CameraPlayer.Rotation.Z,
-        //            0f, //roll rotation
-        //            10f * delta //interpolate speed
-        //        )
-        //    );
-        //}
-        //
-        ////Label
-        //Player.Statistics.LabelClimb.Text = $"Climb: {ClimbRemaining:F2}, CanClimb: {IsClimbRested}";
-        ////Statistics.RectClimb.Scale = new(ClimbRemaining / ClimbPeriod, 1f);
-        //
-        ////Audio Climb - repeat one-shots
-        //if (IsClimbingOrWallRunning && !IsWallRunning && !IsSliding)
-        //{
-        //    if (!Player.Foley.AudioClimb.Playing)
-        //    {
-        //        Player.Foley.AudioClimb.Play();
-        //    }
-        //}
-        //else
-        //{
-        //    if (Player.Foley.AudioClimb.Playing)
-        //    {
-        //        Player.Foley.AudioClimb.Stop();
-        //    }
-        //}
-        ////Audio Wall-run - loop fader
-        //if (IsWallRunning)
-        //{
-        //    if (!Player.Foley.AudioWallrun.Playing)
-        //    {
-        //        Player.Foley.AudioWallrun.Play();
-        //    }
-        //
-        //    Player.Foley.AudioWallrun.VolumeDb = Player.Foley.AudioWallrunVolume;
-        //}
-        //else
-        //{
-        //    Player.Foley.AudioWallrun.VolumeDb -= Player.Foley.AudioWallrunVolumeFadeOutRate * delta;
-        //}
     }
 
     private void ProcessJumpFromGround(float delta)
@@ -836,10 +645,7 @@ public partial class PlayerMovement : CharacterBody3D
 
         //Label
         Player.Statistics.LabelJumpFatigueRecency.Text = $"Jump fatigue recency: {JumpFatigueRecencyTimer:F2}";
-        //Statistics.RectJumpFatigueRecency.Scale = new(JumpFatigueRecencyTimer / JumpFatigueRecencyTimerPeriod, 1f);
-
         Player.Statistics.LabelJumpFatigueOnGround.Text = $"Jump fatigue on-ground: {JumpFatigueOnGroundTimer:F2}";
-        //Statistics.RectJumpFatigueOnGround.Scale = new(JumpFatigueOnGroundTimer / JumpFatigueOnGroundTimerPeriod, 1f);
     }
 
     private void Jump(Vector3 direction, float magnitude)
