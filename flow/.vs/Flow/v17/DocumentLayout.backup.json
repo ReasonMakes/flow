@@ -62,9 +62,9 @@
               "Title": "PlayerMovement.cs",
               "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
               "RelativeDocumentMoniker": "player\\PlayerMovement.cs",
-              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
-              "RelativeToolTip": "player\\PlayerMovement.cs",
-              "ViewState": "AgIAALkBAAAAAAAAAAAewNIBAAAAAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs*",
+              "RelativeToolTip": "player\\PlayerMovement.cs*",
+              "ViewState": "AgIAAMUBAAAAAAAAAAAnwOABAAAcAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-25T21:55:42.623Z",
               "EditorCaption": ""
@@ -79,8 +79,7 @@
               "RelativeToolTip": "UI\\menu\\Menu.cs",
               "ViewState": "AgIAAD8AAAAAAAAAAAApwFMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-25T21:23:18.432Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-25T21:23:18.432Z"
             },
             {
               "$type": "Document",
