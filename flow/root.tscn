@@ -116,10 +116,11 @@ uv1_scale = Vector3(6, 6, 6)
 albedo_texture = ExtResource("29_mk3ig")
 uv1_scale = Vector3(80, 18, 0)
 
-[node name="Root" type="Node3D" node_paths=PackedStringArray("Player", "UpdateRateSpinBox")]
+[node name="Root" type="Node3D" node_paths=PackedStringArray("Player", "SpinBoxUpdateRate", "HSliderUpdateRate")]
 script = ExtResource("1_vrp4g")
 Player = NodePath("Player")
-UpdateRateSpinBox = NodePath("Player/UI/Menu/VBoxContainer/UpdateRate/UpdateRateSpinBox")
+SpinBoxUpdateRate = NodePath("Player/UI/Menu/VBoxContainer/UpdateRate/Adjusters/SpinBoxUpdateRate")
+HSliderUpdateRate = NodePath("Player/UI/Menu/VBoxContainer/UpdateRate/Adjusters/HSliderUpdateRate")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_qedk2")
@@ -379,7 +380,7 @@ grow_horizontal = 2
 text = "0:00.00"
 horizontal_alignment = 1
 
-[node name="Menu" type="Control" parent="Player/UI" node_paths=PackedStringArray("ButtonQuit", "PlayerMovement", "SpinBoxSensitivity", "HSliderSensitivity")]
+[node name="Menu" type="Control" parent="Player/UI" node_paths=PackedStringArray("ButtonQuit", "PlayerMovement", "SpinBoxSensitivity", "HSliderSensitivity", "SpinBoxMainVolume", "HSliderMainVolume", "SpinBoxFoleyVolume", "HSliderFoleyVolume", "SpinBoxMusicVolume", "HSliderMusicVolume")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -391,6 +392,12 @@ ButtonQuit = NodePath("VBoxContainer/Quit")
 PlayerMovement = NodePath("../../Movement")
 SpinBoxSensitivity = NodePath("VBoxContainer/Sensitivity/Adjusters/SpinBoxSensitivity")
 HSliderSensitivity = NodePath("VBoxContainer/Sensitivity/Adjusters/HSliderSensitivity")
+SpinBoxMainVolume = NodePath("VBoxContainer/MainVolume/Adjusters/SpinBoxMain")
+HSliderMainVolume = NodePath("VBoxContainer/MainVolume/Adjusters/HSliderMain")
+SpinBoxFoleyVolume = NodePath("VBoxContainer/FoleyVolume/Adjusters/SpinBoxFoley")
+HSliderFoleyVolume = NodePath("VBoxContainer/FoleyVolume/Adjusters/HSliderFoley")
+SpinBoxMusicVolume = NodePath("VBoxContainer/MusicVolume/Adjusters/SpinBoxMusic")
+HSliderMusicVolume = NodePath("VBoxContainer/MusicVolume/Adjusters/HSliderMusic")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Player/UI/Menu"]
 layout_mode = 1
@@ -399,10 +406,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -186.0
-offset_top = -15.5
-offset_right = 186.0
-offset_bottom = 15.5
+offset_left = -320.0
+offset_top = -122.5
+offset_right = 320.0
+offset_bottom = 122.5
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -420,7 +427,19 @@ size_flags_vertical = 1
 text = "Main Volume"
 horizontal_alignment = 1
 
-[node name="HSliderMain" type="HSlider" parent="Player/UI/Menu/VBoxContainer/MainVolume"]
+[node name="Adjusters" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer/MainVolume"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpinBoxMain" type="SpinBox" parent="Player/UI/Menu/VBoxContainer/MainVolume/Adjusters"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.25
+step = 0.01
+value = 1.0
+alignment = 1
+
+[node name="HSliderMain" type="HSlider" parent="Player/UI/Menu/VBoxContainer/MainVolume/Adjusters"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -438,7 +457,19 @@ size_flags_vertical = 1
 text = "    Foley Volume"
 horizontal_alignment = 1
 
-[node name="HSliderFoley" type="HSlider" parent="Player/UI/Menu/VBoxContainer/FoleyVolume"]
+[node name="Adjusters" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer/FoleyVolume"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpinBoxFoley" type="SpinBox" parent="Player/UI/Menu/VBoxContainer/FoleyVolume/Adjusters"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.25
+step = 0.01
+value = 1.0
+alignment = 1
+
+[node name="HSliderFoley" type="HSlider" parent="Player/UI/Menu/VBoxContainer/FoleyVolume/Adjusters"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -456,7 +487,19 @@ size_flags_vertical = 1
 text = "    Music Volume"
 horizontal_alignment = 1
 
-[node name="HSliderMusic" type="HSlider" parent="Player/UI/Menu/VBoxContainer/MusicVolume"]
+[node name="Adjusters" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer/MusicVolume"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpinBoxMusic" type="SpinBox" parent="Player/UI/Menu/VBoxContainer/MusicVolume/Adjusters"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.25
+step = 0.01
+value = 1.0
+alignment = 1
+
+[node name="HSliderMusic" type="HSlider" parent="Player/UI/Menu/VBoxContainer/MusicVolume/Adjusters"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -484,6 +527,7 @@ max_value = 1000.0
 step = 0.001
 value = 1.0
 exp_edit = true
+alignment = 1
 
 [node name="HSliderSensitivity" type="HSlider" parent="Player/UI/Menu/VBoxContainer/Sensitivity/Adjusters"]
 layout_mode = 2
@@ -505,12 +549,22 @@ size_flags_vertical = 1
 text = "Update Rate"
 horizontal_alignment = 1
 
-[node name="UpdateRateSpinBox" type="SpinBox" parent="Player/UI/Menu/VBoxContainer/UpdateRate"]
+[node name="Adjusters" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer/UpdateRate"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpinBoxUpdateRate" type="SpinBox" parent="Player/UI/Menu/VBoxContainer/UpdateRate/Adjusters"]
 layout_mode = 2
 size_flags_horizontal = 3
 max_value = 1000.0
 alignment = 1
 suffix = "(Auto)"
+
+[node name="HSliderUpdateRate" type="HSlider" parent="Player/UI/Menu/VBoxContainer/UpdateRate/Adjusters"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+max_value = 1000.0
 
 [node name="AntiAliasing" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer"]
 layout_mode = 2
@@ -578,11 +632,15 @@ shadow_enabled = true
 omni_range = 38.66
 omni_attenuation = 0.465
 
-[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MainVolume/HSliderMain" to="Player/UI/Menu" method="OnHSliderMainValueChanged"]
-[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/FoleyVolume/HSliderFoley" to="Player/UI/Menu" method="OnHSliderFoleyValueChanged"]
-[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MusicVolume/HSliderMusic" to="Player/UI/Menu" method="OnHSliderMusicValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MainVolume/Adjusters/SpinBoxMain" to="Player/UI/Menu" method="OnSpinboxMainValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MainVolume/Adjusters/HSliderMain" to="Player/UI/Menu" method="OnHSliderMainValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/FoleyVolume/Adjusters/SpinBoxFoley" to="Player/UI/Menu" method="OnSpinboxFoleyValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/FoleyVolume/Adjusters/HSliderFoley" to="Player/UI/Menu" method="OnHSliderFoleyValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MusicVolume/Adjusters/SpinBoxMusic" to="Player/UI/Menu" method="OnSpinboxMusicValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MusicVolume/Adjusters/HSliderMusic" to="Player/UI/Menu" method="OnHSliderMusicValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/Sensitivity/Adjusters/SpinBoxSensitivity" to="Player/UI/Menu" method="OnSpinBoxSensitivityValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/Sensitivity/Adjusters/HSliderSensitivity" to="Player/UI/Menu" method="OnHSliderSensitivityValueChanged"]
-[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/UpdateRate/UpdateRateSpinBox" to="." method="OnUpdateRateSpinBoxValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/UpdateRate/Adjusters/SpinBoxUpdateRate" to="." method="OnSpinBoxUpdateRateValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/UpdateRate/Adjusters/HSliderUpdateRate" to="." method="OnHSliderUpdateRateValueChanged"]
 [connection signal="toggled" from="Player/UI/Menu/VBoxContainer/AntiAliasing/CheckBoxAntiAliasing" to="Player/UI/Menu" method="OnCheckBoxAntiAliasingToggled"]
 [connection signal="pressed" from="Player/UI/Menu/VBoxContainer/Quit" to="Player/UI/Menu" method="OnButtonQuitPressed"]

@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Globalization;
 
 public partial class Menu : Control
 {
@@ -8,7 +9,19 @@ public partial class Menu : Control
     [Export] PlayerMovement PlayerMovement;
     [Export] SpinBox SpinBoxSensitivity;
     [Export] HSlider HSliderSensitivity;
-    private bool internalSensitivityUpdate = false;
+    private bool isChangeInternalSensitivity = false;
+
+    [Export] private SpinBox SpinBoxMainVolume;
+    [Export] private HSlider HSliderMainVolume;
+    private bool isChangeInternalMainVolume = false;
+
+    [Export] private SpinBox SpinBoxFoleyVolume;
+    [Export] private HSlider HSliderFoleyVolume;
+    private bool isChangeInternalFoleyVolume = false;
+
+    [Export] private SpinBox SpinBoxMusicVolume;
+    [Export] private HSlider HSliderMusicVolume;
+    private bool isChangeInternalMusicVolume = false;
 
     public override void _Ready()
     {
@@ -45,30 +58,102 @@ public partial class Menu : Control
         GetTree().Quit();
     }
 
+    //Main
     public void OnHSliderMainValueChanged(float linearVal)
     {
-        GD.Print($"Changed main: {linearVal}");
-        int bus = AudioServer.GetBusIndex("Master");
-        float dB = Mathf.LinearToDb(linearVal * 0.2f); //hardcoded multiplier
-        AudioServer.SetBusVolumeDb(bus, dB);
+        if (!isChangeInternalMainVolume)
+        {
+            SetAudioBusVolume("Master", linearVal * 0.2f); //hardcoded multiplier because otherwise volume is way too loud
+            isChangeInternalMainVolume = true;
+            SpinBoxMainVolume.Value = linearVal;
+        }
+        else
+        {
+            isChangeInternalMainVolume = false;
+        }
     }
 
+    public void OnSpinboxMainValueChanged(float linearVal)
+    {
+        if (!isChangeInternalMainVolume)
+        {
+            SetAudioBusVolume("Master", linearVal * 0.2f); //hardcoded multiplier because otherwise volume is way too loud
+            isChangeInternalMainVolume = true;
+            HSliderMainVolume.Value = linearVal;
+        }
+        else
+        {
+            isChangeInternalMainVolume = false;
+        }
+    }
+
+    //Foley
     public void OnHSliderFoleyValueChanged(float linearVal)
     {
-        GD.Print($"Changed foley: {linearVal}");
-        int bus = AudioServer.GetBusIndex("Foley");
-        float dB = Mathf.LinearToDb(linearVal);
-        AudioServer.SetBusVolumeDb(bus, dB);
+        if (!isChangeInternalFoleyVolume)
+        {
+            SetAudioBusVolume("Foley", linearVal);
+            isChangeInternalFoleyVolume = true;
+            SpinBoxFoleyVolume.Value = linearVal;
+        }
+        else
+        {
+            isChangeInternalFoleyVolume = false;
+        }
     }
 
+    public void OnSpinboxFoleyValueChanged(float linearVal)
+    {
+        if (!isChangeInternalFoleyVolume)
+        {
+            SetAudioBusVolume("Foley", linearVal);
+            isChangeInternalFoleyVolume = true;
+            HSliderFoleyVolume.Value = linearVal;
+        }
+        else
+        {
+            isChangeInternalFoleyVolume = false;
+        }
+    }
+
+    //Music
     public void OnHSliderMusicValueChanged(float linearVal)
     {
-        GD.Print($"Changed music: {linearVal}");
-        int bus = AudioServer.GetBusIndex("Music");
-        float dB = Mathf.LinearToDb(linearVal);
-        AudioServer.SetBusVolumeDb(bus, dB);
+        if (!isChangeInternalMusicVolume)
+        {
+            SetAudioBusVolume("Music", linearVal);
+            isChangeInternalMusicVolume = true;
+            SpinBoxMusicVolume.Value = linearVal;
+        }
+        else
+        {
+            isChangeInternalMusicVolume = false;
+        }
     }
 
+    public void OnSpinboxMusicValueChanged(float linearVal)
+    {
+        if (!isChangeInternalMusicVolume)
+        {
+            SetAudioBusVolume("Music", linearVal);
+            isChangeInternalMusicVolume = true;
+            HSliderMusicVolume.Value = linearVal;
+        }
+        else
+        {
+            isChangeInternalMusicVolume = false;
+        }
+    }
+
+    private void SetAudioBusVolume(string busName, float busVolumeLinear)
+    {
+        GD.Print($"Changed {busName}: {busVolumeLinear}");
+        int busIndex = AudioServer.GetBusIndex(busName);
+        float busVolumeDb = Mathf.LinearToDb(busVolumeLinear);
+        AudioServer.SetBusVolumeDb(busIndex, busVolumeDb);
+    }
+
+    //Anti-aliasing
     public void OnCheckBoxAntiAliasingToggled(bool isOn)
     {
         if (isOn)
@@ -81,31 +166,32 @@ public partial class Menu : Control
         }
     }
 
+    //Look sensitivity
     public void OnSpinBoxSensitivityValueChanged(float val)
     {
-        if (!internalSensitivityUpdate)
+        if (!isChangeInternalSensitivity)
         {
             PlayerMovement.MouseSensitivity = val / 1000f;
-            internalSensitivityUpdate = true;
+            isChangeInternalSensitivity = true;
             HSliderSensitivity.Value = PlayerMovement.MouseSensitivity * 1000f;
         }
         else
         {
-            internalSensitivityUpdate = false;
+            isChangeInternalSensitivity = false;
         }
     }
 
     public void OnHSliderSensitivityValueChanged(float val)
     {
-        if (!internalSensitivityUpdate)
+        if (!isChangeInternalSensitivity)
         {
             PlayerMovement.MouseSensitivity = val / 1000f;
-            internalSensitivityUpdate = true;
+            isChangeInternalSensitivity = true;
             SpinBoxSensitivity.Value = PlayerMovement.MouseSensitivity * 1000f;
         }
         else
         {
-            internalSensitivityUpdate = false;
+            isChangeInternalSensitivity = false;
         }
     }
 }

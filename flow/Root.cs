@@ -4,7 +4,9 @@ using System;
 public partial class Root : Node
 {
     [Export] public Player Player;
-    [Export] private SpinBox UpdateRateSpinBox;
+    [Export] private SpinBox SpinBoxUpdateRate;
+    [Export] private HSlider HSliderUpdateRate;
+    private bool isChangeInternalUpdateRate = false;
 
     //HARDWARE
     private double FPSAverageSlowPrevious = -1.0;
@@ -14,7 +16,7 @@ public partial class Root : Node
     public override void _Ready()
     {
         //Set default update rate to the screen refresh rate - this method must be called once to display the user's refresh rate
-        OnUpdateRateSpinBoxValueChanged(0);
+        SetUpdateRateManually(0);
 
         //Starting with a restart ensures the restart sate has parity with the starting state since they become the same thing
         RestartGame();
@@ -67,7 +69,7 @@ public partial class Root : Node
         }
     }
 
-    public void OnUpdateRateSpinBoxValueChanged(double val)
+    private void SetUpdateRateManually(float val)
     {
         FPSUserMax = (int)val;
 
@@ -78,14 +80,42 @@ public partial class Root : Node
             Engine.MaxFps = FPSUserMax;
             Engine.PhysicsTicksPerSecond = FPSUserMax;
 
-            UpdateRateSpinBox.Suffix = "Hz";
+            SpinBoxUpdateRate.Suffix = "Hz";
         }
         else
         {
             //Automatic update rate
             Engine.MaxFps = (int)DisplayServer.ScreenGetRefreshRate();
 
-            UpdateRateSpinBox.Suffix = $"(Auto: {Engine.MaxFps} Hz)";
+            SpinBoxUpdateRate.Suffix = $"(Auto: {Engine.MaxFps} Hz)";
+        }
+    }
+
+    public void OnSpinBoxUpdateRateValueChanged(float val)
+    {
+        if (!isChangeInternalUpdateRate)
+        {
+            SetUpdateRateManually(val);
+            isChangeInternalUpdateRate = true;
+            HSliderUpdateRate.Value = FPSUserMax;
+        }
+        else
+        {
+            isChangeInternalUpdateRate = false;
+        }
+    }
+
+    public void OnHSliderUpdateRateValueChanged(float val)
+    {
+        if (!isChangeInternalUpdateRate)
+        {
+            SetUpdateRateManually(val);
+            isChangeInternalUpdateRate = true;
+            SpinBoxUpdateRate.Value = FPSUserMax;
+        }
+        else
+        {
+            isChangeInternalUpdateRate = false;
         }
     }
 }
