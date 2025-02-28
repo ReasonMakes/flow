@@ -146,14 +146,13 @@ ScreenEffects = NodePath("UI/ScreenEffects")
 Foley = NodePath("Foley")
 LabelTimer = NodePath("UI/HUD/Top/LabelTimer")
 
-[node name="RigidBody3D" type="RigidBody3D" parent="Player" node_paths=PackedStringArray("Statistic1", "Statistic2", "Statistic3", "Statistic4", "Statistic5", "Statistic6", "Statistic7", "Statistic8", "Statistic9", "TestBox", "CameraPlayer")]
+[node name="RigidBody3D" type="RigidBody3D" parent="Player" node_paths=PackedStringArray("Statistic2", "Statistic3", "Statistic4", "Statistic5", "Statistic6", "Statistic7", "Statistic8", "Statistic9", "TestBox", "CameraPlayer")]
 can_sleep = false
 lock_rotation = true
 freeze = true
 contact_monitor = true
 max_contacts_reported = 1000
 script = ExtResource("3_3qxmi")
-Statistic1 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic1")
 Statistic2 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic2")
 Statistic3 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic3")
 Statistic4 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic4")
