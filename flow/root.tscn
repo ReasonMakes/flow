@@ -42,6 +42,9 @@ sky_material = SubResource("ProceduralSkyMaterial_fdpyu")
 [sub_resource type="Environment" id="Environment_qedk2"]
 background_mode = 1
 sky = SubResource("Sky_gjcvo")
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.1
 tonemap_mode = 2
 glow_enabled = true
 
@@ -608,6 +611,21 @@ transform = Transform3D(-5.96046e-08, 0, -1, 0.258819, 0.965926, -1.54268e-08, 0
 size = Vector3(2, 25, 25)
 material = SubResource("StandardMaterial3D_ejnov")
 
+[node name="WallSlanted4" type="CSGBox3D" parent="Map/Greybox"]
+transform = Transform3D(-5.96046e-08, 0, -1, 0.707107, 0.707107, -4.21469e-08, 0.707107, -0.707107, -4.21469e-08, -27, 8, 21)
+size = Vector3(2, 25, 25)
+material = SubResource("StandardMaterial3D_ejnov")
+
+[node name="WallSlanted2" type="CSGBox3D" parent="Map/Greybox"]
+transform = Transform3D(-0.5, 0.866025, 6.0711e-08, 0.866025, 0.5, -8.25278e-08, -1.01827e-07, 1.13133e-08, -1, 27, 1, -41)
+size = Vector3(2, 25, 25)
+material = SubResource("StandardMaterial3D_ejnov")
+
+[node name="WallSlanted3" type="CSGBox3D" parent="Map/Greybox"]
+transform = Transform3D(-0.866026, 0.5, 9.38412e-08, 0.5, 0.866026, -4.11157e-08, -1.01827e-07, 1.13133e-08, -1, 27, 1, -66)
+size = Vector3(2, 25, 25)
+material = SubResource("StandardMaterial3D_ejnov")
+
 [node name="CSGBox2" type="CSGBox3D" parent="Map/Greybox"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3, -38)
 size = Vector3(6, 6, 6)
@@ -622,6 +640,13 @@ rings = 12
 [node name="CSGCylinder3D" type="CSGCylinder3D" parent="Map/Greybox"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, -24, 10, -6)
 radius = 17.0
+height = 38.0
+sides = 40
+material = SubResource("StandardMaterial3D_eaw0r")
+
+[node name="CSGCylinder3D2" type="CSGCylinder3D" parent="Map/Greybox/CSGCylinder3D"]
+operation = 2
+radius = 10.0
 height = 38.0
 sides = 40
 material = SubResource("StandardMaterial3D_eaw0r")

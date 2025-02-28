@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using static Godot.TextServer;
 
 public partial class PlayerMovement : CharacterBody3D
 {
@@ -10,6 +11,9 @@ public partial class PlayerMovement : CharacterBody3D
     public float MouseSensitivity = 0.001f;
 
     private bool IsInAir = false;
+
+    //Gravity
+    private const float GravitySlidingAccelerationResistance = -6f; //maximum sliding acceleration from gravity that the player can resist
 
     //RUN
     private bool InputRunForward = false;
@@ -59,8 +63,6 @@ public partial class PlayerMovement : CharacterBody3D
 
     private const float WallRunVerticalAccelerationCoefficient = 1.25f; //1.5f; //Multiple of gravity, proportional to climb remaining. Vertical acceleration applied when wall-running
     
-
-
     //JUMP
     private bool InputTechJump = false;
     private const float JumpAcceleration = 10f; //instantaneous vertical acceleration
@@ -206,7 +208,7 @@ public partial class PlayerMovement : CharacterBody3D
         ProcessJumpFromGround(delta);
 
         //ACCELERATION/TIME
-        ApplyAccelerationAndDragOverTime(ProcessMovementAndGetVector(delta) + GetGravity(), delta);
+        ApplyAccelerationAndDragOverTime(ProcessMovementAndGetVector(delta) + ProcessGravity(delta), delta);
         Player.Statistics.LabelHSpeed.Text = $"HSpeed: {new Vector3(Velocity.X, 0f, Velocity.Z).Length():F2}";
 
         //APPLY
@@ -267,6 +269,46 @@ public partial class PlayerMovement : CharacterBody3D
         }
 
         return dragComponent;
+    }
+
+    private Vector3 ProcessGravity(float delta)
+    {
+        bool isTesting = true;
+
+        Vector3 gravityVector = GetGravity();
+
+        if (IsOnFloor())
+        {
+            //Get the floor normal (may be slanted)
+            Vector3 floorNormal = GetFloorNormal();
+
+            //Calculate direction along the floor
+            gravityVector -= floorNormal * gravityVector.Dot(floorNormal);
+
+            //Allow the player to resist weak sliding forces
+            GD.Print(gravityVector.Y);
+            if (gravityVector.Y > GravitySlidingAccelerationResistance) //down is -Y
+            {
+                if (IsSliding)
+                {
+                    if (InputRunForward || InputRunLeft || InputRunRight || InputRunBack)
+                    {
+                        //Crouch-walking
+                        gravityVector = Vector3.Zero;
+                    }
+                }
+                else
+                {
+                    //Standing
+                    gravityVector = Vector3.Zero;
+                }
+            }
+            
+            //Testing
+            if (isTesting) TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + gravityVector.Normalized() * 2.0f;
+        }
+
+        return gravityVector;
     }
 
     private Vector3 Run(float delta)
@@ -440,14 +482,17 @@ public partial class PlayerMovement : CharacterBody3D
 
     private Vector3 ProcessMovementAndGetVector(float delta)
     {
+        //Testing
+        bool isTesting = false;
+
         //Get the camera-forward direction
-        Vector3 wishDirection = GetWishDirection(CameraPlayer.GlobalTransform.Basis);
+        Vector3 wishDirection = GetWishDirection(CameraPlayer.GlobalBasis);
 
         //Default values
         Vector3 finalMoveOnWallVector = Vector3.Zero;
         IsWallRunning = false;
         IsClimbing = false;
-        TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + wishDirection * 2.0f;
+        if (isTesting) TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + wishDirection * 2.0f;
 
         //Rest
         if (IsOnFloor())
@@ -504,7 +549,7 @@ public partial class PlayerMovement : CharacterBody3D
                         WallMovementRemaining = Mathf.Max(WallMovementRemaining - delta, 0f);
 
                         //Move along the wall
-                        TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction.Normalized() * 2.0f;
+                        if (isTesting) TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction.Normalized() * 2.0f;
                         finalMoveOnWallVector += GetVectorAlignedJerked(delta, direction, acceleration, jerkCoefficient);
                     }
                     else
@@ -528,7 +573,7 @@ public partial class PlayerMovement : CharacterBody3D
                             WallMovementRemaining = Mathf.Max(WallMovementRemaining - delta, 0f);
 
                             //Move along the wall
-                            TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction.Normalized() * 2.0f;
+                            if (isTesting) TestVectorBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + direction.Normalized() * 2.0f;
                             finalMoveOnWallVector += GetVectorAlignedJerked(delta, direction, acceleration, jerkCoefficient);
                         }
                     }
