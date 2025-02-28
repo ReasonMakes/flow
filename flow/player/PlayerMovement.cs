@@ -26,6 +26,13 @@ public partial class PlayerMovement : RigidBody3D
 
     private const float MoveForce = 100f;
 
+    //Wall/ceiling movement
+    private bool IsOnFlatSurface = false;
+    private bool IsTryingToMoveOnWall = false;
+    private float ClimbEnergy = 1f;
+    private const float ClimbRestRate = 4f; //multiplied with delta
+    private const float ClimbTireRate = 1f; //multiplied with delta
+
     public override void _Input(InputEvent @event)
     {
         //Run Direction
@@ -65,12 +72,28 @@ public partial class PlayerMovement : RigidBody3D
         {
             Freeze = false;
         }
+
+        //Process climb energy
+        if (IsOnFlatSurface)
+        {
+            ClimbEnergy = Mathf.Min(1f, ClimbEnergy + (delta * ClimbRestRate));
+        }
+        else if (IsTryingToMoveOnWall)
+        {
+            ClimbEnergy = Mathf.Max(0f, ClimbEnergy - (delta * ClimbTireRate));
+        }
+        Statistic5.Text = $"ClimbEnergy: {ClimbEnergy} (IsOnFlatSurface: {IsOnFlatSurface})";
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
     {
+        //Default values
         float smallestDot = 1f;
-        Vector3 relativeUp = Vector3.Up; //default up is global up
+        Vector3 relativeUp = Vector3.Up;
+        Vector3 surfaceNormal = Vector3.Up;
+        IsOnFlatSurface = false;
+        IsTryingToMoveOnWall = false;
+        float moveForce = MoveForce;
 
         //WASD - This is not normalized!
         Vector3 wishDirection = Vector3.Zero;
@@ -82,15 +105,14 @@ public partial class PlayerMovement : RigidBody3D
         // Loop over each contact
         for (int i = 0; i < state.GetContactCount(); i++)
         {
-            Vector3 surfaceNormal = state.GetContactLocalNormal(i);
+            surfaceNormal = state.GetContactLocalNormal(i);
             Statistic1.Text = $"surfaceNormal: {surfaceNormal}";
 
             //Update movement frame to be the relative to whatever of the colliders we're moving into that looking at the most (whatever has the smallest dot product)\
             //1. Are we moving into this collider?
-            //wishDirection = wishDirection.Normalized();
-            float wishMoveToSurfaceDot = wishDirection.Dot(surfaceNormal);
-            Statistic2.Text = $"wishMoveToSurfaceDot: {wishMoveToSurfaceDot}";
-            if (wishMoveToSurfaceDot < 0f)
+            bool isMovingIntoSurface = wishDirection.Dot(surfaceNormal) < 0f;
+            Statistic2.Text = $"isMovingIntoSurface: {isMovingIntoSurface}";
+            if (isMovingIntoSurface)
             {
                 Statistic2.Text += " (moving into this collider)";
 
@@ -103,21 +125,54 @@ public partial class PlayerMovement : RigidBody3D
                     Statistic3.Text += " (looking at this collider the most)";
                     smallestDot = lookToSurfaceDot;
                     relativeUp = surfaceNormal;
+
+                    //CLIMBING/WALLRUNNING
+                    //If THIS PARTICULAR surface is inclined enough, then we're climbing/wallrunning, and can only do this if we have wallEnergy
+                    float surfaceMovingIntoSlant = Vector3.Up.Dot(surfaceNormal);
+                    Statistic4.Text = $"surfaceMovingIntoSlant: {surfaceMovingIntoSlant}";
+                    if (surfaceMovingIntoSlant < 0.75f) //45 degrees
+                    {
+                        //Slanted surface
+                        IsTryingToMoveOnWall = true;
+
+                        //Out of climb energy
+                        if (ClimbEnergy <= 0f)
+                        {
+                            //Reduce movement force
+                            moveForce = 0f;
+
+                            //Move relative to the ground
+                            //relativeUp = Vector3.Up;
+                        }
+                    }
                 }
+            }
+
+            //ONE of these colliders is a flat surface
+            float surfaceAnySlant = Vector3.Up.Dot(surfaceNormal);
+            Statistic7.Text = $"IsOnFlatSurface: {IsOnFlatSurface} (surfaceAnySlant: {surfaceAnySlant})";
+            if (surfaceAnySlant >= 0.75f)
+            {
+                IsOnFlatSurface = true;
             }
         }
 
         Vector3 moveDirection = wishDirection;
 
+
+        
+
+
+
         //Move along surface
-        //If this surface is inclined enough, then we're climbing/wallrunning, and can only do this if we have wallEnergy. Otherwise just move along Up?
         moveDirection -= relativeUp * wishDirection.Dot(relativeUp);
+        moveDirection = moveDirection.Normalized();
 
-        moveDirection = moveDirection.Normalized(); //is this necessary?
-
-        Statistic4.Text = $"moveDirection: {moveDirection}";
+        Statistic5.Text = $"moveDirection: {moveDirection}";
         TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + moveDirection * 2.0f;
 
-        ApplyForce(moveDirection * MoveForce);
+        Statistic6.Text = $"moveForce: {moveForce}";
+
+        ApplyForce(moveDirection * moveForce);
     }
 }
