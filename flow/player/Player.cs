@@ -33,7 +33,7 @@ public partial class Player : Node3D
 
     public void Respawn()
     {
-        PlayerMovement.Velocity = Vector3.Zero;
+        //PlayerMovement.Velocity = Vector3.Zero;
         PlayerMovement.GlobalPosition = GlobalPosition;
 
         HUD.LabelDead.Visible = false;

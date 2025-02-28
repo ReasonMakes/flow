@@ -1,4 +1,4 @@
-[gd_scene load_steps=46 format=3 uid="uid://wfhvshehcqq7"]
+[gd_scene load_steps=47 format=3 uid="uid://wfhvshehcqq7"]
 
 [ext_resource type="Script" path="res://Root.cs" id="1_vrp4g"]
 [ext_resource type="Script" path="res://UI/menu/Menu.cs" id="2_esyfm"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://player/ScreenEffects.cs" id="4_el1a1"]
 [ext_resource type="Script" path="res://UI/HUD.cs" id="4_q5fo1"]
 [ext_resource type="AudioStream" uid="uid://hodl8hno857r" path="res://player/sound/footstep/footstep1.mp3" id="5_e32br"]
+[ext_resource type="ArrayMesh" uid="uid://uli0qji7tfbw" path="res://map/cylinder_inverted_mesh.tres" id="5_h7w68"]
 [ext_resource type="AudioStream" uid="uid://biixfddetbaa4" path="res://player/sound/dash/dash.mp3" id="5_kyjnb"]
 [ext_resource type="AudioStream" uid="uid://dxs4aruivw85i" path="res://player/sound/wallrun/wallrun.mp3" id="6_64o50"]
 [ext_resource type="AudioStream" uid="uid://dl8v7c7vcxmla" path="res://player/sound/footstep/footstep2.mp3" id="6_ywgcq"]
@@ -48,9 +49,7 @@ ambient_light_energy = 0.1
 tonemap_mode = 2
 glow_enabled = true
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_10tie"]
-
-[sub_resource type="SphereShape3D" id="SphereShape3D_vfglu"]
+[sub_resource type="SphereShape3D" id="SphereShape3D_thyl1"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_e2ey6"]
 random_pitch = 1.02
@@ -119,6 +118,9 @@ uv1_scale = Vector3(6, 6, 6)
 albedo_texture = ExtResource("29_mk3ig")
 uv1_scale = Vector3(80, 18, 0)
 
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_8t0jg"]
+data = PackedVector3Array(0, 1, -1, 0.1951, 0.9808, 1, 0.1951, 0.9808, -1, 0, 1, -1, 0, 1, 1, 0.1951, 0.9808, 1, 0.1951, 0.9808, -1, 0.3827, 0.9239, 1, 0.3827, 0.9239, -1, 0.1951, 0.9808, -1, 0.1951, 0.9808, 1, 0.3827, 0.9239, 1, 0.3827, 0.9239, -1, 0.5556, 0.8314, 1, 0.5556, 0.8314, -1, 0.3827, 0.9239, -1, 0.3827, 0.9239, 1, 0.5556, 0.8314, 1, 0.5556, 0.8314, -1, 0.7071, 0.7071, 1, 0.7071, 0.7071, -1, 0.5556, 0.8314, -1, 0.5556, 0.8314, 1, 0.7071, 0.7071, 1, 0.7071, 0.7071, -1, 0.8314, 0.5556, 1, 0.8314, 0.5556, -1, 0.7071, 0.7071, -1, 0.7071, 0.7071, 1, 0.8314, 0.5556, 1, 0.8314, 0.5556, -1, 0.9239, 0.3827, 1, 0.9239, 0.3827, -1, 0.8314, 0.5556, -1, 0.8314, 0.5556, 1, 0.9239, 0.3827, 1, 0.9239, 0.3827, -1, 0.9808, 0.1951, 1, 0.9808, 0.1951, -1, 0.9239, 0.3827, -1, 0.9239, 0.3827, 1, 0.9808, 0.1951, 1, 0.9808, 0.1951, -1, 1, 0, 1, 1, 0, -1, 0.9808, 0.1951, -1, 0.9808, 0.1951, 1, 1, 0, 1, 1, 0, -1, 0.9808, -0.1951, 1, 0.9808, -0.1951, -1, 1, 0, -1, 1, 0, 1, 0.9808, -0.1951, 1, 0.9808, -0.1951, -1, 0.9239, -0.3827, 1, 0.9239, -0.3827, -1, 0.9808, -0.1951, -1, 0.9808, -0.1951, 1, 0.9239, -0.3827, 1, 0.9239, -0.3827, -1, 0.8314, -0.5556, 1, 0.8314, -0.5556, -1, 0.9239, -0.3827, -1, 0.9239, -0.3827, 1, 0.8314, -0.5556, 1, 0.8314, -0.5556, -1, 0.7071, -0.7071, 1, 0.7071, -0.7071, -1, 0.8314, -0.5556, -1, 0.8314, -0.5556, 1, 0.7071, -0.7071, 1, 0.7071, -0.7071, -1, 0.5556, -0.8315, 1, 0.5556, -0.8315, -1, 0.7071, -0.7071, -1, 0.7071, -0.7071, 1, 0.5556, -0.8315, 1, 0.5556, -0.8315, -1, 0.3827, -0.9239, 1, 0.3827, -0.9239, -1, 0.5556, -0.8315, -1, 0.5556, -0.8315, 1, 0.3827, -0.9239, 1, 0.3827, -0.9239, -1, 0.1951, -0.9808, 1, 0.1951, -0.9808, -1, 0.3827, -0.9239, -1, 0.3827, -0.9239, 1, 0.1951, -0.9808, 1, 0.1951, -0.9808, -1, 0, -1, 1, 0, -1, -1, 0.1951, -0.9808, -1, 0.1951, -0.9808, 1, 0, -1, 1, 0, -1, -1, -0.1951, -0.9808, 1, -0.1951, -0.9808, -1, 0, -1, -1, 0, -1, 1, -0.1951, -0.9808, 1, -0.1951, -0.9808, -1, -0.3827, -0.9239, 1, -0.3827, -0.9239, -1, -0.1951, -0.9808, -1, -0.1951, -0.9808, 1, -0.3827, -0.9239, 1, -0.3827, -0.9239, -1, -0.5556, -0.8315, 1, -0.5556, -0.8315, -1, -0.3827, -0.9239, -1, -0.3827, -0.9239, 1, -0.5556, -0.8315, 1, -0.5556, -0.8315, -1, -0.7071, -0.7071, 1, -0.7071, -0.7071, -1, -0.5556, -0.8315, -1, -0.5556, -0.8315, 1, -0.7071, -0.7071, 1, -0.7071, -0.7071, -1, -0.8315, -0.5556, 1, -0.8315, -0.5556, -1, -0.7071, -0.7071, -1, -0.7071, -0.7071, 1, -0.8315, -0.5556, 1, -0.8315, -0.5556, -1, -0.9239, -0.3827, 1, -0.9239, -0.3827, -1, -0.8315, -0.5556, -1, -0.8315, -0.5556, 1, -0.9239, -0.3827, 1, -0.9239, -0.3827, -1, -0.9808, -0.1951, 1, -0.9808, -0.1951, -1, -0.9239, -0.3827, -1, -0.9239, -0.3827, 1, -0.9808, -0.1951, 1, -0.9808, -0.1951, -1, -1, 0, 1, -1, 0, -1, -0.9808, -0.1951, -1, -0.9808, -0.1951, 1, -1, 0, 1, -1, 0, -1, -0.9808, 0.1951, 1, -0.9808, 0.1951, -1, -1, 0, -1, -1, 0, 1, -0.9808, 0.1951, 1, -0.9808, 0.1951, -1, -0.9239, 0.3827, 1, -0.9239, 0.3827, -1, -0.9808, 0.1951, -1, -0.9808, 0.1951, 1, -0.9239, 0.3827, 1, -0.9239, 0.3827, -1, -0.8315, 0.5556, 1, -0.8315, 0.5556, -1, -0.9239, 0.3827, -1, -0.9239, 0.3827, 1, -0.8315, 0.5556, 1, -0.8315, 0.5556, -1, -0.7071, 0.7071, 1, -0.7071, 0.7071, -1, -0.8315, 0.5556, -1, -0.8315, 0.5556, 1, -0.7071, 0.7071, 1, -0.7071, 0.7071, -1, -0.5556, 0.8314, 1, -0.5556, 0.8314, -1, -0.7071, 0.7071, -1, -0.7071, 0.7071, 1, -0.5556, 0.8314, 1, -0.5556, 0.8314, -1, -0.3827, 0.9239, 1, -0.3827, 0.9239, -1, -0.5556, 0.8314, -1, -0.5556, 0.8314, 1, -0.3827, 0.9239, 1, -0.3827, 0.9239, -1, -0.1951, 0.9808, 1, -0.1951, 0.9808, -1, -0.3827, 0.9239, -1, -0.3827, 0.9239, 1, -0.1951, 0.9808, 1, -0.1951, 0.9808, -1, 0, 1, 1, 0, 1, -1, -0.1951, 0.9808, -1, -0.1951, 0.9808, 1, 0, 1, 1)
+
 [node name="Root" type="Node3D" node_paths=PackedStringArray("Player", "SpinBoxUpdateRate", "HSliderUpdateRate")]
 script = ExtResource("1_vrp4g")
 Player = NodePath("Player")
@@ -135,35 +137,39 @@ shadow_enabled = true
 [node name="CSGBox3D" type="CSGBox3D" parent="."]
 
 [node name="Player" type="Node3D" parent="." node_paths=PackedStringArray("PlayerMovement", "Statistics", "HUD", "ScreenEffects", "Foley", "LabelTimer")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 script = ExtResource("3_2jdfd")
-PlayerMovement = NodePath("Movement")
+PlayerMovement = NodePath("RigidBody3D")
 Statistics = NodePath("UI/HUD/Statistics")
 HUD = NodePath("UI/HUD")
 ScreenEffects = NodePath("UI/ScreenEffects")
 Foley = NodePath("Foley")
 LabelTimer = NodePath("UI/HUD/Top/LabelTimer")
 
-[node name="Movement" type="CharacterBody3D" parent="Player" node_paths=PackedStringArray("CameraPlayer", "Player", "TestVectorBox", "ColliderCapsule", "ColliderSphere")]
+[node name="RigidBody3D" type="RigidBody3D" parent="Player" node_paths=PackedStringArray("LabelSurfaceDot", "LabelColliderNormalY", "TestBox", "CameraPlayer")]
+can_sleep = false
+lock_rotation = true
+freeze = true
+contact_monitor = true
+max_contacts_reported = 1000
 script = ExtResource("3_3qxmi")
-CameraPlayer = NodePath("Camera3D")
-Player = NodePath("..")
-TestVectorBox = NodePath("../../CSGBox3D")
-ColliderCapsule = NodePath("ColliderCapsule")
-ColliderSphere = NodePath("ColliderSphere")
+LabelSurfaceDot = NodePath("../UI/HUD/Statistics/VBoxContainer/SurfaceDot")
+LabelColliderNormalY = NodePath("../UI/HUD/Statistics/VBoxContainer/ColliderNormalY")
+TestBox = NodePath("../../CSGBox3D")
+CameraPlayer = NodePath("CameraYaw/CameraPitch/Camera3D")
 
-[node name="ColliderCapsule" type="CollisionShape3D" parent="Player/Movement"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-shape = SubResource("CapsuleShape3D_10tie")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player/RigidBody3D"]
+shape = SubResource("SphereShape3D_thyl1")
 
-[node name="ColliderSphere" type="CollisionShape3D" parent="Player/Movement"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-shape = SubResource("SphereShape3D_vfglu")
-disabled = true
+[node name="CameraYaw" type="Node3D" parent="Player/RigidBody3D"]
 
-[node name="Camera3D" type="Camera3D" parent="Player/Movement"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
+[node name="CameraPitch" type="Node3D" parent="Player/RigidBody3D/CameraYaw"]
+
+[node name="Camera3D" type="Camera3D" parent="Player/RigidBody3D/CameraYaw/CameraPitch" node_paths=PackedStringArray("Yaw", "Pitch")]
 fov = 80.0
 script = ExtResource("7_yeb25")
+Yaw = NodePath("../..")
+Pitch = NodePath("..")
 
 [node name="Foley" type="Node" parent="Player" node_paths=PackedStringArray("AudioFootstep", "AudioWallrun", "AudioClimb", "AudioJump", "AudioLand", "AudioSlide", "AudioDash")]
 script = ExtResource("10_mvwvy")
@@ -239,6 +245,7 @@ script = ExtResource("4_el1a1")
 DashMaterial = ExtResource("8_3ocgd")
 
 [node name="DashLines" type="ColorRect" parent="Player/UI/ScreenEffects"]
+visible = false
 material = ExtResource("8_3ocgd")
 layout_mode = 1
 anchors_preset = 15
@@ -304,6 +311,14 @@ layout_mode = 2
 text = "Statistic"
 
 [node name="FatigueOnGround" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+layout_mode = 2
+text = "Statistic"
+
+[node name="SurfaceDot" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+layout_mode = 2
+text = "Statistic"
+
+[node name="ColliderNormalY" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 
@@ -392,7 +407,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_esyfm")
 ButtonQuit = NodePath("VBoxContainer/Quit")
-PlayerMovement = NodePath("../../Movement")
+PlayerMovement = NodePath("../../RigidBody3D")
 SpinBoxSensitivity = NodePath("VBoxContainer/Sensitivity/Adjusters/SpinBoxSensitivity")
 HSliderSensitivity = NodePath("VBoxContainer/Sensitivity/Adjusters/HSliderSensitivity")
 SpinBoxMainVolume = NodePath("VBoxContainer/MainVolume/Adjusters/SpinBoxMain")
@@ -601,6 +616,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5)
 size = Vector3(2, 2, 2)
 material = SubResource("StandardMaterial3D_r6x8e")
 
+[node name="CSGBox3" type="CSGBox3D" parent="Map/Greybox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3, -5)
+size = Vector3(2, 2, 2)
+material = SubResource("StandardMaterial3D_r6x8e")
+
 [node name="Wall" type="CSGBox3D" parent="Map/Greybox"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, -67)
 size = Vector3(2, 50, 50)
@@ -650,6 +670,16 @@ radius = 10.0
 height = 38.0
 sides = 40
 material = SubResource("StandardMaterial3D_eaw0r")
+
+[node name="Cylinder" type="MeshInstance3D" parent="Map"]
+transform = Transform3D(12, 0, 0, 0, 12, 0, 0, 0, 12, 32, 12, -9)
+mesh = ExtResource("5_h7w68")
+skeleton = NodePath("")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Map/Cylinder"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Map/Cylinder/StaticBody3D"]
+shape = SubResource("ConcavePolygonShape3D_8t0jg")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 27)
