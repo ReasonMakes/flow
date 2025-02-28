@@ -146,30 +146,37 @@ ScreenEffects = NodePath("UI/ScreenEffects")
 Foley = NodePath("Foley")
 LabelTimer = NodePath("UI/HUD/Top/LabelTimer")
 
-[node name="RigidBody3D" type="RigidBody3D" parent="Player" node_paths=PackedStringArray("LabelSurfaceDot", "LabelColliderNormalY", "TestBox", "CameraPlayer")]
+[node name="RigidBody3D" type="RigidBody3D" parent="Player" node_paths=PackedStringArray("Statistic1", "Statistic2", "Statistic3", "Statistic4", "Statistic5", "Statistic6", "Statistic7", "Statistic8", "Statistic9", "TestBox", "CameraPlayer")]
 can_sleep = false
 lock_rotation = true
 freeze = true
 contact_monitor = true
 max_contacts_reported = 1000
 script = ExtResource("3_3qxmi")
-LabelSurfaceDot = NodePath("../UI/HUD/Statistics/VBoxContainer/SurfaceDot")
-LabelColliderNormalY = NodePath("../UI/HUD/Statistics/VBoxContainer/ColliderNormalY")
+Statistic1 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic1")
+Statistic2 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic2")
+Statistic3 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic3")
+Statistic4 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic4")
+Statistic5 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic5")
+Statistic6 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic6")
+Statistic7 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic7")
+Statistic8 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic8")
+Statistic9 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic9")
 TestBox = NodePath("../../CSGBox3D")
-CameraPlayer = NodePath("CameraYaw/CameraPitch/Camera3D")
+CameraPlayer = NodePath("CameraGrandparent/CameraParent/CameraPlayer")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player/RigidBody3D"]
 shape = SubResource("SphereShape3D_thyl1")
 
-[node name="CameraYaw" type="Node3D" parent="Player/RigidBody3D"]
+[node name="CameraGrandparent" type="Node3D" parent="Player/RigidBody3D"]
 
-[node name="CameraPitch" type="Node3D" parent="Player/RigidBody3D/CameraYaw"]
+[node name="CameraParent" type="Node3D" parent="Player/RigidBody3D/CameraGrandparent"]
 
-[node name="Camera3D" type="Camera3D" parent="Player/RigidBody3D/CameraYaw/CameraPitch" node_paths=PackedStringArray("Yaw", "Pitch")]
+[node name="CameraPlayer" type="Camera3D" parent="Player/RigidBody3D/CameraGrandparent/CameraParent" node_paths=PackedStringArray("CameraGrandparent", "CameraParent")]
 fov = 80.0
 script = ExtResource("7_yeb25")
-Yaw = NodePath("../..")
-Pitch = NodePath("..")
+CameraGrandparent = NodePath("../..")
+CameraParent = NodePath("..")
 
 [node name="Foley" type="Node" parent="Player" node_paths=PackedStringArray("AudioFootstep", "AudioWallrun", "AudioClimb", "AudioJump", "AudioLand", "AudioSlide", "AudioDash")]
 script = ExtResource("10_mvwvy")
@@ -273,52 +280,52 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("3_s70ja")
-FPS = NodePath("VBoxContainer/FPS")
-LabelHSpeed = NodePath("VBoxContainer/HSpeed")
-LabelClimb = NodePath("VBoxContainer/Climb")
-LabelJerk = NodePath("VBoxContainer/Jerk")
-LabelDash = NodePath("VBoxContainer/Dash")
-LabelJumpFatigueRecency = NodePath("VBoxContainer/FatigueRecency")
-LabelJumpFatigueOnGround = NodePath("VBoxContainer/FatigueOnGround")
+FPS = NodePath("VBoxContainer/Statistic1")
+LabelHSpeed = NodePath("VBoxContainer/Statistic2")
+LabelClimb = NodePath("VBoxContainer/Statistic3")
+LabelJerk = NodePath("VBoxContainer/Statistic4")
+LabelDash = NodePath("VBoxContainer/Statistic5")
+LabelJumpFatigueRecency = NodePath("VBoxContainer/Statistic6")
+LabelJumpFatigueOnGround = NodePath("VBoxContainer/Statistic7")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Player/UI/HUD/Statistics"]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="FPS" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+[node name="Statistic1" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 
-[node name="HSpeed" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+[node name="Statistic2" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 
-[node name="Climb" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+[node name="Statistic3" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 
-[node name="Jerk" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+[node name="Statistic4" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 
-[node name="Dash" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+[node name="Statistic5" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 
-[node name="FatigueRecency" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+[node name="Statistic6" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 
-[node name="FatigueOnGround" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+[node name="Statistic7" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 
-[node name="SurfaceDot" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+[node name="Statistic8" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 
-[node name="ColliderNormalY" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+[node name="Statistic9" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
 text = "Statistic"
 

@@ -7,10 +7,6 @@
       "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\playermovementpurify.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\playermovementpurify.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\playermovementold.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\playermovementold.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
@@ -22,32 +18,19 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "PlayerMovementOld.cs",
               "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovementOld.cs",
               "RelativeDocumentMoniker": "player\\PlayerMovementOld.cs",
               "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovementOld.cs",
               "RelativeToolTip": "player\\PlayerMovementOld.cs",
-              "ViewState": "AgIAAPMBAAAAAAAAAAAvwEACAABcAAAAAAAAAA==",
+              "ViewState": "AgIAAOsBAAAAAAAAAAAcwAICAAAQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-28T17:33:48.074Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "PlayerMovementPurify.cs",
-              "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovementPurify.cs",
-              "RelativeDocumentMoniker": "player\\PlayerMovementPurify.cs",
-              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovementPurify.cs",
-              "RelativeToolTip": "player\\PlayerMovementPurify.cs",
-              "ViewState": "AgIAAF0AAAAAAAAAAAAowH0AAAB+AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-28T06:50:13.245Z",
+              "WhenOpened": "2025-02-28T19:14:35.737Z",
               "EditorCaption": ""
             },
             {
@@ -58,7 +41,7 @@
               "RelativeDocumentMoniker": "player\\PlayerMovement.cs",
               "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
               "RelativeToolTip": "player\\PlayerMovement.cs",
-              "ViewState": "AgIAAFoAAAAAAAAAAAAowE0AAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAcwEsAAAAdAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-28T06:21:53.821Z",
               "EditorCaption": ""

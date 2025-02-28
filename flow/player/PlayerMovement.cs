@@ -3,8 +3,15 @@ using Godot;
 public partial class PlayerMovement : RigidBody3D
 {
     //Testing
-    [Export] private Label LabelSurfaceDot;
-    [Export] private Label LabelColliderNormalY;
+    [Export] private Label Statistic1;
+    [Export] private Label Statistic2;
+    [Export] private Label Statistic3;
+    [Export] private Label Statistic4;
+    [Export] private Label Statistic5;
+    [Export] private Label Statistic6;
+    [Export] private Label Statistic7;
+    [Export] private Label Statistic8;
+    [Export] private Label Statistic9;
     [Export] private CsgBox3D TestBox;
 
     //Look
@@ -31,20 +38,20 @@ public partial class PlayerMovement : RigidBody3D
         if (@event is InputEventMouseMotion mouseMotion)
         {
             //Yaw
-            CameraPlayer.Yaw.Rotation = new Vector3(
-                CameraPlayer.Yaw.Rotation.X,
-                CameraPlayer.Yaw.Rotation.Y - mouseMotion.Relative.X * MouseSensitivity,
-                CameraPlayer.Yaw.Rotation.Z
+            CameraPlayer.CameraGrandparent.Rotation = new Vector3(
+                CameraPlayer.CameraGrandparent.Rotation.X,
+                CameraPlayer.CameraGrandparent.Rotation.Y - mouseMotion.Relative.X * MouseSensitivity,
+                CameraPlayer.CameraGrandparent.Rotation.Z
             );
 
             //Pitch, clamp to straight up or down
-            CameraPlayer.Pitch.Rotation = new Vector3(
-                Mathf.Clamp(CameraPlayer.Pitch.Rotation.X - mouseMotion.Relative.Y * MouseSensitivity,
+            CameraPlayer.CameraParent.Rotation = new Vector3(
+                Mathf.Clamp(CameraPlayer.CameraParent.Rotation.X - mouseMotion.Relative.Y * MouseSensitivity,
                     -0.24f * Mathf.Tau,
                     0.24f * Mathf.Tau
                 ),
-                CameraPlayer.Pitch.Rotation.Y,
-                CameraPlayer.Pitch.Rotation.Z
+                CameraPlayer.CameraParent.Rotation.Y,
+                CameraPlayer.CameraParent.Rotation.Z
             );
         }
     }
@@ -53,64 +60,17 @@ public partial class PlayerMovement : RigidBody3D
     {
         float delta = (float)deltaDouble;
 
-        //void _integrate_forces(state: PhysicsDirectBodyState3D) virtual
-        //void add_constant_central_force(force: Vector3)
-        //void add_constant_force(force: Vector3, position: Vector3 = Vector3(0, 0, 0))
-        //void add_constant_torque(torque: Vector3)
-        //void apply_central_force(force: Vector3)
-        //void apply_central_impulse(impulse: Vector3)
-        //void apply_force(force: Vector3, position: Vector3 = Vector3(0, 0, 0))
-        //void apply_impulse(impulse: Vector3, position: Vector3 = Vector3(0, 0, 0))
-        //void apply_torque(torque: Vector3)
-        //void apply_torque_impulse(impulse: Vector3)
-        //Array[Node3D] get_colliding_bodies() const
-        //int get_contact_count() const
-        //Basis get_inverse_inertia_tensor() const
-        //void set_axis_velocity(axis_velocity: Vector3)
-
         //Unfreeze once game started
         if (Time.GetTicksMsec() > 2000f)
         {
             Freeze = false;
         }
-
-
-
-
-        //WASD Movement - relative to whichever collider we're looking at the most
-        //Vector3 wishDirection = Vector3.Zero; //Can't wish for any direction unless colliding with something
-
-        //if (GetContactCount() > 0)
-        //{
-        //    Godot.Collections.Array<Node3D> collidingBodies = GetCollidingBodies();
-        //    for (int i = 0; i < collidingBodies.Count; i++)
-        //    {
-        //        //Vector3 surfaceNormal = collidingBodies[i].GetNormal();
-        //
-        //        Vector3 cameraVector = CameraPlayer.Yaw.GlobalRotation + CameraPlayer.Pitch.GlobalRotation;
-        //        GD.Print($"Colliding with {state.}");
-        //        //Colliding with 2
-        //        //Contact #0: Normal=(0.7750174, 0.4058608, 0.48438105), Position=(1.4622355, -4.917383E-06, -23.537766)
-        //        //Contact #1: Normal=(-0, 1, -0), Position=(1.4551114, -0.00010642409, -23.530642)
-        //        //cameraVector.Dot(surfaceNormal);
-        //    }
-        //}
-
-        //wishDirection = GetWishDirection(CameraPlayer.GlobalBasis);
-
-
-        //ApplyForce(wishDirection * MoveForce);
-
-        //Gravity
-
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
     {
         float smallestDot = 1f;
-        Vector3 movementFrame = Vector3.Up;
-
-        Vector3 lookDirection = -CameraPlayer.GlobalBasis.Z;
+        Vector3 relativeUp = Vector3.Up; //default up is global up
 
         //WASD - This is not normalized!
         Vector3 wishDirection = Vector3.Zero;
@@ -118,41 +78,46 @@ public partial class PlayerMovement : RigidBody3D
         if (InputRunLeft) wishDirection -= CameraPlayer.GlobalBasis.X;
         if (InputRunRight) wishDirection += CameraPlayer.GlobalBasis.X;
         if (InputRunBack) wishDirection += CameraPlayer.GlobalBasis.Z;
-
+        
         // Loop over each contact
         for (int i = 0; i < state.GetContactCount(); i++)
         {
             Vector3 surfaceNormal = state.GetContactLocalNormal(i);
-            //Vector3 surfacePosition = state.GetContactLocalPosition(i);
+            Statistic1.Text = $"surfaceNormal: {surfaceNormal}";
 
-            //Update movement frame to be the relative to whatever of our colliders we're looking at the most
-            float surfaceDot = lookDirection.Dot(surfaceNormal);
-            if (surfaceDot < smallestDot)
+            //Update movement frame to be the relative to whatever of the colliders we're moving into that looking at the most (whatever has the smallest dot product)\
+            //1. Are we moving into this collider?
+            //wishDirection = wishDirection.Normalized();
+            float wishMoveToSurfaceDot = wishDirection.Dot(surfaceNormal);
+            Statistic2.Text = $"wishMoveToSurfaceDot: {wishMoveToSurfaceDot}";
+            if (wishMoveToSurfaceDot < 0f)
             {
-                smallestDot = surfaceDot;
-                movementFrame = surfaceNormal;
-            }
+                Statistic2.Text += " (moving into this collider)";
 
-            //Test
-            LabelSurfaceDot.Text = $"lookDirection={lookDirection}, surfaceNormal={surfaceNormal}, dot={surfaceDot}";
+                //2. Are we looking at this collider the most?
+                float lookToSurfaceDot = -CameraPlayer.GlobalBasis.Z.Dot(surfaceNormal);
+                Statistic3.Text = $"lookToSurfaceDot: {lookToSurfaceDot}";
+
+                if (lookToSurfaceDot < smallestDot)
+                {
+                    Statistic3.Text += " (looking at this collider the most)";
+                    smallestDot = lookToSurfaceDot;
+                    relativeUp = surfaceNormal;
+                }
+            }
         }
 
-        wishDirection -= movementFrame * wishDirection.Dot(movementFrame);
-        wishDirection = wishDirection.Normalized();
+        Vector3 moveDirection = wishDirection;
 
-        LabelColliderNormalY.Text = $"wishDirection: {wishDirection}";
-        TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + wishDirection * 2.0f;
+        //Move along surface
+        //If this surface is inclined enough, then we're climbing/wallrunning, and can only do this if we have wallEnergy. Otherwise just move along Up?
+        moveDirection -= relativeUp * wishDirection.Dot(relativeUp);
 
-        ApplyForce(wishDirection * MoveForce);
-    }
+        moveDirection = moveDirection.Normalized(); //is this necessary?
 
-    private Vector3 GetWishDirection(Basis basis)
-    {
-        Vector3 wishDirection = Vector3.Zero;
-        if (InputRunForward) wishDirection -= basis.Z;
-        if (InputRunLeft) wishDirection -= basis.X;
-        if (InputRunRight) wishDirection += basis.X;
-        if (InputRunBack) wishDirection += basis.Z;
-        return wishDirection.Normalized();
+        Statistic4.Text = $"moveDirection: {moveDirection}";
+        TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + moveDirection * 2.0f;
+
+        ApplyForce(moveDirection * MoveForce);
     }
 }
