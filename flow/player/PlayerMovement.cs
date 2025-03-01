@@ -39,6 +39,9 @@ public partial class PlayerMovement : RigidBody3D
     private const float JumpForce = 500f;
 
     //Wall/ceiling thrusting
+    private const float SlopeDotUp = 0.75f; //What angle (as a dot product of the surface normal to global up)
+                                            //constitutes a slope vs a flat surface and engages climbing/wallrunning
+                                            //-1 is down, 0 is toward the horizon, 1 is up
     private bool OnFlat = false;
     private bool IsWishingIntoSlope = false;
     private float ClimbEnergy = 1f;
@@ -134,8 +137,8 @@ public partial class PlayerMovement : RigidBody3D
         //COLLISION DETECTION
         //Types of colliders:
         //- air          [no collider]
-        //- slope        [Vector3.Up.Dot(collider) < 0.75f]
-        //- flat         [Vector3.Up.Dot(collider) >= 0.75f]
+        //- slope        [Vector3.Up.Dot(collider) < SlopeDotUp]
+        //- flat         [Vector3.Up.Dot(collider) >= SlopeDotUp]
 
         //Types of collisions:
         //- wishDirection   Wish vector into a collider         [we only use this one in this implementation]
@@ -145,10 +148,10 @@ public partial class PlayerMovement : RigidBody3D
         OnFlat = false;
         bool onSlope = false;
         
-        float wishIntoDotSmallest = 1f;
-        Vector3 wishIntoNormal = Vector3.Up;
+        float surfaceNormalDotWishSmallest = 1f;
+        Vector3 surfaceNormalWishingInto = Vector3.Up;
 
-        bool isWishIntoASlope = false;
+        bool isCurrentCheckAWishIntoASlope = false;
         IsWishingIntoSlope = false;
 
         float thrustForce = ThrustForce;
@@ -160,19 +163,19 @@ public partial class PlayerMovement : RigidBody3D
             {
                 Vector3 surfaceNormal = state.GetContactLocalNormal(i);
 
-                if (Vector3.Up.Dot(surfaceNormal) < 0.75f)
+                if (Vector3.Up.Dot(surfaceNormal) < SlopeDotUp)
                 {
                     //Wishing into slope
                     onSlope = true;
 
                     //Ensure this is the collider we're wishing into the most
                     float wishIntoDot = wishDirection.Dot(surfaceNormal);
-                    if (wishIntoDot < 0f && wishIntoDot < wishIntoDotSmallest)
+                    if (wishIntoDot < 0f && wishIntoDot < surfaceNormalDotWishSmallest)
                     {
-                        wishIntoDotSmallest = wishIntoDot;
-                        wishIntoNormal = surfaceNormal;
+                        surfaceNormalDotWishSmallest = wishIntoDot;
+                        surfaceNormalWishingInto = surfaceNormal;
 
-                        isWishIntoASlope = true;
+                        isCurrentCheckAWishIntoASlope = true;
                     }
                 }
                 else
@@ -182,18 +185,18 @@ public partial class PlayerMovement : RigidBody3D
 
                     //Ensure this is the collider we're wishing into the most
                     float wishIntoDot = wishDirection.Dot(surfaceNormal);
-                    if (wishIntoDot < 0f && wishIntoDot < wishIntoDotSmallest)
+                    if (wishIntoDot < 0f && wishIntoDot < surfaceNormalDotWishSmallest)
                     {
-                        wishIntoDotSmallest = wishIntoDot;
-                        wishIntoNormal = surfaceNormal;
+                        surfaceNormalDotWishSmallest = wishIntoDot;
+                        surfaceNormalWishingInto = surfaceNormal;
 
-                        isWishIntoASlope = false;
+                        isCurrentCheckAWishIntoASlope = false;
                     }
                 }
             }
 
             //The collider that we're wishing to move into the most (not just at least one collider) is a slope
-            if (isWishIntoASlope)
+            if (isCurrentCheckAWishIntoASlope)
             {
                 IsWishingIntoSlope = true;
             }
@@ -209,25 +212,30 @@ public partial class PlayerMovement : RigidBody3D
         //- Default (!OnFlat && !onSlope): air movement [no redirection]
 
         //Allow climbing straight-up and inverted surfaces
-        if (isWishIntoASlope && ClimbEnergy > 0f)
+        if (isCurrentCheckAWishIntoASlope && ClimbEnergy > 0f)
         {
             wishDirection = wishDirectionRaw;
         }
 
         //TODO: climbing up slopes fails if not looking at the slope (such as if looking up too much)
 
-        //Get direction along (tangent to) surface (if surface is flat, this is the last step. If in air, wishIntoNormal defaults to Vector3.Up)
-        Vector3 thrustDirection = (wishDirection - (wishIntoNormal * wishDirection.Dot(wishIntoNormal))).Normalized();
+        //Get direction along (tangent to) surface (if surface is flat, this is the last step. If in air, surfaceNormalWishingInto defaults to Vector3.Up)
+        Vector3 thrustDirection = (wishDirection - (surfaceNormalWishingInto * wishDirection.Dot(surfaceNormalWishingInto))).Normalized();
 
-        Statistic10.Text = "";
+        Statistic10.Text = "Not wallrunning";
         if (contactCount > 0)
         {
             if (onSlope)
             {
-                if (ClimbEnergy > 0f && !OnFlat && thrustDirection != Vector3.Zero) //wishing to thrust
+                if (
+                    ClimbEnergy > 0f
+                    && !OnFlat
+                    && thrustDirection != Vector3.Zero //wishing to thrust
+                    && thrustDirection.Dot(Vector3.Up) < SlopeDotUp //not wishing to thrust up (climb). Could also use surfaceNormalWishingInto
+                )
                 {
-                    Statistic9.Text = $"camera-surface dot: {-CameraPlayer.GlobalBasis.Z.Dot(wishIntoNormal)}";
-                    bool isLookingAtSurface = -CameraPlayer.GlobalBasis.Z.Dot(wishIntoNormal) < -0.5f;
+                    Statistic9.Text = $"camera-surface dot: {-CameraPlayer.GlobalBasis.Z.Dot(surfaceNormalWishingInto)}";
+                    bool isLookingAtSurface = -CameraPlayer.GlobalBasis.Z.Dot(surfaceNormalWishingInto) < -0.5f;
                     if (!isLookingAtSurface)
                     {
                         //Wall-running
@@ -240,23 +248,26 @@ public partial class PlayerMovement : RigidBody3D
                         ApplyForce(-GetGravity());
                         //LinearVelocity = new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z);
 
-                        Statistic10.Text = $"Wallrunning";
+                        Statistic10.Text = $"Wallrunning, thrustDirection.Dot(Vector3.Up): {thrustDirection.Dot(Vector3.Up)}";
                     }
                 }
-                else if (ClimbEnergy <= 0f && thrustDirection.Dot(Vector3.Up) > 0f) //wishing to thrust up
+                else if (
+                    ClimbEnergy <= 0f
+                    && thrustDirection.Dot(Vector3.Up) > 0f //wishing to thrust up
+                )
                 {
                     //Limit if tired-wishing on slope
                     //If wishing to thrust up, redirect wish to be tangent to the horizontal component of the surface
 
                     //Direction
                     //1. Get [the direction on the slope that points upward but is still tangent to it] by removing [the wall's normal] component from [global up].
-                    Vector3 globalUpTangentToSurface = (Vector3.Up - (Vector3.Up.Dot(wishIntoNormal) * wishIntoNormal)).Normalized();
+                    Vector3 globalUpTangentToSurface = (Vector3.Up - (Vector3.Up.Dot(surfaceNormalWishingInto) * surfaceNormalWishingInto)).Normalized();
                     //2. Remove the globalUpTangentToSurface component from thrustDirection to get a purely horizontal direction
                     Vector3 horizontalAlongSlope = thrustDirection - globalUpTangentToSurface * thrustDirection.Dot(globalUpTangentToSurface);
                     thrustDirection = horizontalAlongSlope.Normalized();
 
                     //Force
-                    float dotWishToNormal = wishDirection.Dot(wishIntoNormal);
+                    float dotWishToNormal = wishDirection.Dot(surfaceNormalWishingInto);
                     float forceMultiplier = 1f - Mathf.Max(0f, -dotWishToNormal);
                     thrustForce *= 1f - Mathf.Max(0f, -dotWishToNormal);
                 }
@@ -278,6 +289,7 @@ public partial class PlayerMovement : RigidBody3D
                     Vector3 normalChecking = state.GetContactLocalNormal(i);
                     if (Vector3.Up.Dot(normalChecking) > Vector3.Up.Dot(normalOfFlattestCollider))
                     {
+                        //This collider is the flattest so far
                         normalOfFlattestCollider = normalChecking;
                     }
                 }
