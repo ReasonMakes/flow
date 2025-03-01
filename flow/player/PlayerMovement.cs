@@ -113,15 +113,19 @@ public partial class PlayerMovement : RigidBody3D
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
     {
-        //WASD
-        Vector3 wishDirection = Vector3.Zero;
-        if (InputRunForward) wishDirection -= CameraPlayer.GlobalBasis.Z;
-        if (InputRunLeft) wishDirection -= CameraPlayer.GlobalBasis.X;
-        if (InputRunRight) wishDirection += CameraPlayer.GlobalBasis.X;
-        if (InputRunBack) wishDirection += CameraPlayer.GlobalBasis.Z;
-        wishDirection = (wishDirection - (Vector3.Up * wishDirection.Dot(Vector3.Up))).Normalized();
+        //GET WISH DIRECTION
+        Vector3 wishDirectionRaw = Vector3.Zero;
+        if (InputRunForward) wishDirectionRaw -= CameraPlayer.GlobalBasis.Z;
+        if (InputRunLeft) wishDirectionRaw -= CameraPlayer.GlobalBasis.X;
+        if (InputRunRight) wishDirectionRaw += CameraPlayer.GlobalBasis.X;
+        if (InputRunBack) wishDirectionRaw += CameraPlayer.GlobalBasis.Z;
 
-        //Collision detection
+        //Convert camera look to flat plane
+        //this step MUST be skipped if we want to be able to climb straight-up or inverted inclines
+        //yet, this step is ABSOLUTELY NECESSARY if we want to prevent staying on walls even when tired
+        Vector3 wishDirection = (wishDirectionRaw - (Vector3.Up * wishDirectionRaw.Dot(Vector3.Up))).Normalized();
+
+        //COLLISION DETECTION
         //Types of colliders:
         //- air          [no collider]
         //- slope        [Vector3.Up.Dot(collider) < 0.75f]
@@ -132,12 +136,8 @@ public partial class PlayerMovement : RigidBody3D
         //- LinearVelocity  Velocity vector into a collider
         //- GetGravity()    Gravity vector into a collider
 
-        
-
         OnFlat = false;
         bool onSlope = false;
-
-        bool isWishIntoACollider = false;
         
         float wishIntoDotSmallest = 1f;
         Vector3 wishIntoNormal = Vector3.Up;
@@ -174,8 +174,6 @@ public partial class PlayerMovement : RigidBody3D
                         wishIntoNormal = surfaceNormal;
 
                         isWishIntoASlope = true;
-
-                        isWishIntoACollider = true;
                     }
                 }
                 else
@@ -191,8 +189,6 @@ public partial class PlayerMovement : RigidBody3D
                         wishIntoNormal = surfaceNormal;
 
                         isWishIntoASlope = false;
-
-                        isWishIntoACollider = true;
                     }
                 }
             }
@@ -204,12 +200,18 @@ public partial class PlayerMovement : RigidBody3D
             }
         }
 
-        //Redirection
+        //RE-DIRECTION ALONG COLLIDER SURFACE TANGENT
         //Permutations:
         //- flat surface tangents [redirect wish tangent to surface]
         //- slope tangents (no up on slopes when tired) [if moving down, redirect wish tangent to surface; if moving up, redirect wish tangent to horizontal of surface]
         //- [maybe: can move away from slopes - or maybe wall jump away only, or maybe this is a non-issue]
         //- Default (!OnFlat && !onSlope): air movement [no redirection]
+
+        //Allow climbing straight-up and inverted surfaces
+        if (isWishIntoASlope && ClimbEnergy > 0f)
+        {
+            wishDirection = wishDirectionRaw;
+        }
 
         //Get direction along (tangent to) surface (if surface is flat, this is the last step. If in air, wishIntoNormal defaults to Vector3.Up)
         Vector3 thrustDirection = (wishDirection - (wishIntoNormal * wishDirection.Dot(wishIntoNormal))).Normalized();
@@ -275,5 +277,10 @@ public partial class PlayerMovement : RigidBody3D
         ApplyForce(thrustDirection * thrustForce);
 
         TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
+
+        if (InputJump && OnFlat)
+        {
+            ApplyImpulse(Vector3.Up * 500f);
+        }
     }
 }
