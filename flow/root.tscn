@@ -1,4 +1,4 @@
-[gd_scene load_steps=47 format=3 uid="uid://wfhvshehcqq7"]
+[gd_scene load_steps=48 format=3 uid="uid://wfhvshehcqq7"]
 
 [ext_resource type="Script" path="res://Root.cs" id="1_vrp4g"]
 [ext_resource type="Script" path="res://UI/menu/Menu.cs" id="2_esyfm"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://player/PlayerMovement.cs" id="3_3qxmi"]
 [ext_resource type="PackedScene" uid="uid://jx5i3ft4na7a" path="res://UI/menu/button.tscn" id="3_6315c"]
 [ext_resource type="Script" path="res://UI/Statistics.cs" id="3_s70ja"]
+[ext_resource type="PhysicsMaterial" uid="uid://bar44redygg23" path="res://player/physics_material.tres" id="3_tb4a8"]
 [ext_resource type="Script" path="res://player/ScreenEffects.cs" id="4_el1a1"]
 [ext_resource type="Script" path="res://UI/HUD.cs" id="4_q5fo1"]
 [ext_resource type="AudioStream" uid="uid://hodl8hno857r" path="res://player/sound/footstep/footstep1.mp3" id="5_e32br"]
@@ -146,7 +147,9 @@ ScreenEffects = NodePath("UI/ScreenEffects")
 Foley = NodePath("Foley")
 LabelTimer = NodePath("UI/HUD/Top/LabelTimer")
 
-[node name="RigidBody3D" type="RigidBody3D" parent="Player" node_paths=PackedStringArray("Statistic2", "Statistic3", "Statistic4", "Statistic5", "Statistic6", "Statistic7", "Statistic8", "Statistic9", "TestBox", "CameraPlayer")]
+[node name="RigidBody3D" type="RigidBody3D" parent="Player" node_paths=PackedStringArray("Statistic2", "Statistic3", "Statistic4", "Statistic5", "Statistic6", "Statistic7", "Statistic8", "Statistic9", "Statistic10", "Statistic11", "Statistic12", "Statistic13", "Statistic14", "Statistic15", "TestBox", "CameraPlayer")]
+mass = 100.0
+physics_material_override = ExtResource("3_tb4a8")
 can_sleep = false
 lock_rotation = true
 freeze = true
@@ -161,6 +164,12 @@ Statistic6 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic6")
 Statistic7 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic7")
 Statistic8 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic8")
 Statistic9 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic9")
+Statistic10 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic10")
+Statistic11 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic11")
+Statistic12 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic12")
+Statistic13 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic13")
+Statistic14 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic14")
+Statistic15 = NodePath("../UI/HUD/Statistics/VBoxContainer/Statistic15")
 TestBox = NodePath("../../CSGBox3D")
 CameraPlayer = NodePath("CameraGrandparent/CameraParent/CameraPlayer")
 
@@ -176,6 +185,8 @@ fov = 80.0
 script = ExtResource("7_yeb25")
 CameraGrandparent = NodePath("../..")
 CameraParent = NodePath("..")
+
+[node name="CSGSphere3D" type="CSGSphere3D" parent="Player/RigidBody3D"]
 
 [node name="Foley" type="Node" parent="Player" node_paths=PackedStringArray("AudioFootstep", "AudioWallrun", "AudioClimb", "AudioJump", "AudioLand", "AudioSlide", "AudioDash")]
 script = ExtResource("10_mvwvy")
@@ -294,39 +305,48 @@ offset_bottom = 40.0
 
 [node name="Statistic1" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
-text = "Statistic"
 
 [node name="Statistic2" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
-text = "Statistic"
 
 [node name="Statistic3" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
-text = "Statistic"
 
 [node name="Statistic4" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
-text = "Statistic"
 
 [node name="Statistic5" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
-text = "Statistic"
 
 [node name="Statistic6" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
-text = "Statistic"
 
 [node name="Statistic7" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
-text = "Statistic"
 
 [node name="Statistic8" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
-text = "Statistic"
 
 [node name="Statistic9" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
 layout_mode = 2
-text = "Statistic"
+
+[node name="Statistic10" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+layout_mode = 2
+
+[node name="Statistic11" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+layout_mode = 2
+
+[node name="Statistic12" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+layout_mode = 2
+
+[node name="Statistic13" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+layout_mode = 2
+
+[node name="Statistic14" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+layout_mode = 2
+
+[node name="Statistic15" type="Label" parent="Player/UI/HUD/Statistics/VBoxContainer"]
+layout_mode = 2
 
 [node name="Centre" type="Control" parent="Player/UI/HUD"]
 layout_mode = 1
@@ -563,6 +583,26 @@ step = 0.001
 value = 1.0
 exp_edit = true
 
+[node name="Dev1" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Player/UI/Menu/VBoxContainer/Dev1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Move Force"
+
+[node name="Adjusters" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer/Dev1"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpinBoxDev1" type="SpinBox" parent="Player/UI/Menu/VBoxContainer/Dev1/Adjusters"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1e+18
+step = 0.0
+value = 10000.0
+alignment = 1
+
 [node name="UpdateRate" type="HBoxContainer" parent="Player/UI/Menu/VBoxContainer"]
 layout_mode = 2
 
@@ -687,6 +727,11 @@ skeleton = NodePath("")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Map/Cylinder/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_8t0jg")
 
+[node name="Camera3D" type="Camera3D" parent="Map"]
+transform = Transform3D(-0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, -0.707107, 0, 7, -71)
+visible = false
+fov = 84.5
+
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 27)
 shadow_enabled = true
@@ -701,6 +746,7 @@ omni_attenuation = 0.465
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/MusicVolume/Adjusters/HSliderMusic" to="Player/UI/Menu" method="OnHSliderMusicValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/Sensitivity/Adjusters/SpinBoxSensitivity" to="Player/UI/Menu" method="OnSpinBoxSensitivityValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/Sensitivity/Adjusters/HSliderSensitivity" to="Player/UI/Menu" method="OnHSliderSensitivityValueChanged"]
+[connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/Dev1/Adjusters/SpinBoxDev1" to="Player/RigidBody3D" method="UpdateMoveForce"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/UpdateRate/Adjusters/SpinBoxUpdateRate" to="." method="OnSpinBoxUpdateRateValueChanged"]
 [connection signal="value_changed" from="Player/UI/Menu/VBoxContainer/UpdateRate/Adjusters/HSliderUpdateRate" to="." method="OnHSliderUpdateRateValueChanged"]
 [connection signal="toggled" from="Player/UI/Menu/VBoxContainer/AntiAliasing/CheckBoxAntiAliasing" to="Player/UI/Menu" method="OnCheckBoxAntiAliasingToggled"]

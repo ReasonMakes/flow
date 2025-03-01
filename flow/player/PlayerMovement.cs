@@ -11,6 +11,12 @@ public partial class PlayerMovement : RigidBody3D
     [Export] private Label Statistic7;
     [Export] private Label Statistic8;
     [Export] private Label Statistic9;
+    [Export] private Label Statistic10;
+    [Export] private Label Statistic11;
+    [Export] private Label Statistic12;
+    [Export] private Label Statistic13;
+    [Export] private Label Statistic14;
+    [Export] private Label Statistic15;
     [Export] private CsgBox3D TestBox;
 
     //Look
@@ -23,11 +29,15 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputRunRight = false;
     private bool InputRunBack = false;
 
-    private const float MoveForce = 100f;
+    public float MoveForce = 10000f;
+    //TODO: add twitch/jerk
+
+    //Jump
+    private bool InputJump = false;
 
     //Wall/ceiling movement
     private bool IsOnFlatSurface = false;
-    private bool IsTryingToMoveOnWall = false;
+    private bool IsTryingToMoveIntoWall = false;
     private float ClimbEnergy = 1f;
     private const float ClimbRestRate = 4f; //multiplied with delta
     private const float ClimbTireRate = 1f; //multiplied with delta
@@ -39,6 +49,7 @@ public partial class PlayerMovement : RigidBody3D
         InputRunLeft = Input.IsActionPressed("move_run_dir_left");
         InputRunRight = Input.IsActionPressed("move_run_dir_right");
         InputRunBack = Input.IsActionPressed("move_run_dir_back");
+        InputJump = Input.IsActionPressed("move_jump");
 
         //Look
         if (@event is InputEventMouseMotion mouseMotion)
@@ -62,6 +73,11 @@ public partial class PlayerMovement : RigidBody3D
         }
     }
 
+    public void UpdateMoveForce(float val)
+    {
+        MoveForce = val;
+    }
+
     public override void _PhysicsProcess(double deltaDouble)
     {
         float delta = (float)deltaDouble;
@@ -77,21 +93,28 @@ public partial class PlayerMovement : RigidBody3D
         {
             ClimbEnergy = Mathf.Min(1f, ClimbEnergy + (delta * ClimbRestRate));
         }
-        else if (IsTryingToMoveOnWall)
+        else if (IsTryingToMoveIntoWall)
         {
             ClimbEnergy = Mathf.Max(0f, ClimbEnergy - (delta * ClimbTireRate));
         }
         Statistic4.Text = $"IsOnFlatSurface: {IsOnFlatSurface}";
-        Statistic5.Text = $"IsTryingToMoveOnWall: {IsTryingToMoveOnWall}";
+        Statistic5.Text = $"IsTryingToMoveOnWall: {IsTryingToMoveIntoWall}";
+        Statistic7.Text = $"Speed: {LinearVelocity.Length()}";
+        Statistic8.Text = $"HSpeed: {new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z).Length()}";
+        Statistic9.Text = $"VSpeed: {LinearVelocity.Y}";
+        Statistic10.Text = $"Angular velocity: {AngularVelocity}";
+        Statistic11.Text = $"Climb energy: {ClimbEnergy}";
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
     {
-        //Desired behaviours:
+        //Behaviours:
         //Know if we're on any flat surface
         //Know if we're trying to climb
         //Walk along a flat surface - any collider with a Vector3.Up.Dot(surfaceNormal) >= 0.75f
-        //Climb a slanted surface - if there's a collider with a Vector3.Up.Dot(surfaceNormal) < 0.75f, and it is the collider that we're looking at the most, and we have climb energy - takes priority over walking along flat surface
+        //Climb a slanted surface - if there's a collider with a Vector3.Up.Dot(surfaceNormal) < 0.75f,
+        //                          and it is the collider that we're looking at the most,
+        //                          and we have climb energy - takes priority over walking along flat surface
 
         //WASD - This is not normalized!
         Vector3 wishDirection = Vector3.Zero;
@@ -101,29 +124,39 @@ public partial class PlayerMovement : RigidBody3D
         if (InputRunBack) wishDirection += CameraPlayer.GlobalBasis.Z;
 
         // Loop over each contact
-        float smallestDot = 1f;
+        float smallestLookDot = 1f;
         Vector3 normalOfColliderLookingAt = Vector3.Up;
+        float smallestMoveIntoDot = 1f;
+        Vector3 normalOfColliderMovingInto = Vector3.Up;
         for (int i = 0; i < state.GetContactCount(); i++)
         {
             Vector3 surfaceNormal = state.GetContactLocalNormal(i);
             float lookToSurfaceDot = -CameraPlayer.GlobalBasis.Z.Dot(surfaceNormal);
 
             //Find the collider we're looking at the most
-            if (lookToSurfaceDot < smallestDot)
+            if (lookToSurfaceDot < smallestLookDot)
             {
-                smallestDot = lookToSurfaceDot;
+                smallestLookDot = lookToSurfaceDot;
                 normalOfColliderLookingAt = surfaceNormal;
+            }
+
+            //Find the collider we're moving into
+            float moveIntoDot = wishDirection.Dot(surfaceNormal);
+            if (moveIntoDot < 0f && moveIntoDot < smallestMoveIntoDot)
+            {
+                smallestMoveIntoDot = moveIntoDot;
+                normalOfColliderMovingInto = surfaceNormal;
             }
         }
         Statistic2.Text = $"normalOfColliderLookingAt: {normalOfColliderLookingAt}";
 
         //Adjust movement based on if moving into a slanted surface
         float moveForce = MoveForce;
-        IsTryingToMoveOnWall = false;
+        IsTryingToMoveIntoWall = false;
         IsOnFlatSurface = false;
-        Vector3 relativeUp = normalOfColliderLookingAt;
+        Vector3 relativeUp = normalOfColliderMovingInto;
         bool isMovingIntoSurface = false;
-        float dotWishToCollider = 0f;
+        float dotWishToMoveIntoCollider = 0f;
         if (state.GetContactCount() == 0)
         {
             //In the air
@@ -131,31 +164,17 @@ public partial class PlayerMovement : RigidBody3D
         }
         else
         {
-            float surfaceSlant = Vector3.Up.Dot(normalOfColliderLookingAt);
-            dotWishToCollider = wishDirection.Dot(normalOfColliderLookingAt);
-            isMovingIntoSurface = dotWishToCollider < 0f;
-            if (surfaceSlant < 0.75f)
+            float surfaceMovingIntoSlant = Vector3.Up.Dot(normalOfColliderMovingInto);
+            dotWishToMoveIntoCollider = wishDirection.Dot(normalOfColliderMovingInto);
+            isMovingIntoSurface = dotWishToMoveIntoCollider < 0f;
+            if (surfaceMovingIntoSlant < 0.75f)
             {
+                Statistic3.Text = $"On a slanted surface";
                 if (isMovingIntoSurface)
                 {
                     //Slanted surface that we're too tired to move into
-                    IsTryingToMoveOnWall = true;
-                    Statistic3.Text = $"Colliding and looking at a slanted surface; ClimbEnergy={ClimbEnergy}";
-
-                    if (ClimbEnergy <= 0f)
-                    {
-                        //Allow moving only by the amount not moving into the wall
-                        //Vector3 lookDirectionAlongWall = wishDirection - (wishDirection.Dot(normalOfColliderLookingAt) * normalOfColliderLookingAt);
-                        //Vector3 horizontalDirection = lookDirectionAlongWall - (lookDirectionAlongWall.Dot(Vector3.Up) * Vector3.Up);
-
-
-                        //float clampedDotToColliderComplement = 1f - Mathf.Max(0f, -dotToCollider);
-                        //moveForce *= clampedDotToColliderComplement;
-                        //
-                        //Statistic3.Text += "; tired";
-                        //Statistic6.Text = $"dotToCollider: {clampedDotToColliderComplement}";
-                        //Statistic7.Text = $"moveForce: {moveForce}";
-                    }
+                    IsTryingToMoveIntoWall = true;
+                    Statistic3.Text = $"Moving into a slanted surface";
                 }
                 else
                 {
@@ -166,6 +185,7 @@ public partial class PlayerMovement : RigidBody3D
             else
             {
                 //Flat-ish surface
+                //TODO: allow this to check for if we're landing/standing on a surface, not just moving into it willingly
                 IsOnFlatSurface = true;
                 Statistic3.Text = $"On a flat-ish surface";
             }
@@ -176,112 +196,39 @@ public partial class PlayerMovement : RigidBody3D
 
         //Don't allow moving up a slanted surface when tired - when trying to, instead move horizontally along it
         float dotMoveToUp = moveDirection.Dot(Vector3.Up);
-        Statistic7.Text = $"dotMoveToUp: {dotMoveToUp}";
-        if (IsTryingToMoveOnWall && ClimbEnergy <= 0f && isMovingIntoSurface && dotMoveToUp >= 0f)
+        Statistic6.Text = $"dotMoveToUp: {dotMoveToUp}";
+        if (IsTryingToMoveIntoWall && ClimbEnergy <= 0f && dotMoveToUp >= 0f)
         {
-            //Direction
-            Vector3 lookDirectionAlongWall = wishDirection - (wishDirection.Dot(normalOfColliderLookingAt) * normalOfColliderLookingAt);
-            //Horizontal
-            moveDirection = lookDirectionAlongWall - (lookDirectionAlongWall.Dot(Vector3.Up) * Vector3.Up);
+            // 1) Calculate the slope's "up" direction by removing the wall's normal component from global up.
+            Vector3 globalUpTangentToSurface = (Vector3.Up - (Vector3.Up.Dot(relativeUp) * relativeUp)).Normalized();
 
-            //This allows for a little curved area near the player
-            //Vector3 moveDirection = moveDirection - (moveDirection.Dot(Vector3.Up) * Vector3.Up);
+            // 2) Remove the slopeUp component from moveDirection to get purely horizontal movement on the slope.
+            Vector3 horizontalAlongSlope = moveDirection - globalUpTangentToSurface * moveDirection.Dot(globalUpTangentToSurface);
+            moveDirection = horizontalAlongSlope.Normalized();
 
             //Force
-            moveForce *= 1f - Mathf.Max(0f, -dotWishToCollider);
+            float dotWishToMovingIntoCollider = wishDirection.Dot(normalOfColliderMovingInto);
+            float forceMultiplier = 1f - Mathf.Max(0f, -dotWishToMovingIntoCollider);
+            moveForce *= 1f - Mathf.Max(0f, -dotWishToMovingIntoCollider);
+
+            Statistic12.Text = $"dotWishToMovingIntoCollider: {dotWishToMovingIntoCollider}";
+            Statistic13.Text = $"forceMultiplier: {forceMultiplier}";
+            Statistic14.Text = $"moveForce: {moveForce}";
+            Statistic15.Text = $"move direction: {moveDirection}";
         }
-        
+
+        //Force proportional to friction
+        //float friction = PhysicsMaterialOverride != null ? PhysicsMaterialOverride.Friction : 1.0f; // Default is 1.0 if no override exists
+
+        //Jump
+        if (InputJump)
+        {
+            ApplyImpulse(relativeUp * 10f);
+        }
+
         //Apply
         ApplyForce(moveDirection * moveForce);
 
         TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + moveDirection * 2.0f;
     }
-
-    //public void Old_IntegrateForces(PhysicsDirectBodyState3D state)
-    //{
-    //    //Default values
-    //    float smallestDot = 1f;
-    //    Vector3 relativeUp = Vector3.Up;
-    //    Vector3 surfaceNormal = Vector3.Up;
-    //    IsOnFlatSurface = false;
-    //    IsTryingToMoveOnWall = false;
-    //    float moveForce = MoveForce;
-    //
-    //    //WASD - This is not normalized!
-    //    Vector3 wishDirection = Vector3.Zero;
-    //    if (InputRunForward) wishDirection -= CameraPlayer.GlobalBasis.Z;
-    //    if (InputRunLeft) wishDirection -= CameraPlayer.GlobalBasis.X;
-    //    if (InputRunRight) wishDirection += CameraPlayer.GlobalBasis.X;
-    //    if (InputRunBack) wishDirection += CameraPlayer.GlobalBasis.Z;
-    //    
-    //    // Loop over each contact
-    //    for (int i = 0; i < state.GetContactCount(); i++)
-    //    {
-    //        surfaceNormal = state.GetContactLocalNormal(i);
-    //        Statistic1.Text = $"surfaceNormal: {surfaceNormal}";
-    //
-    //        //ONE of these colliders is a flat surface
-    //        float surfaceAnySlant = Vector3.Up.Dot(surfaceNormal);
-    //        Statistic7.Text = $"IsOnFlatSurface: {IsOnFlatSurface} (surfaceAnySlant: {surfaceAnySlant})";
-    //        if (surfaceAnySlant >= 0.75f)
-    //        {
-    //            IsOnFlatSurface = true;
-    //        }
-    //
-    //        //Update movement frame to be the relative to whatever of the colliders we're moving into that looking at the most (whatever has the smallest dot product)\
-    //        //1. Are we moving into this collider?
-    //        bool isMovingIntoSurface = wishDirection.Dot(surfaceNormal) < 0f;
-    //        Statistic2.Text = $"isMovingIntoSurface: {isMovingIntoSurface}";
-    //        if (isMovingIntoSurface)
-    //        {
-    //            Statistic2.Text += " (moving into this collider)";
-    //
-    //            //2. Are we looking at this collider the most?
-    //            float lookToSurfaceDot = -CameraPlayer.GlobalBasis.Z.Dot(surfaceNormal);
-    //            Statistic3.Text = $"lookToSurfaceDot: {lookToSurfaceDot}";
-    //
-    //            if (lookToSurfaceDot < smallestDot)
-    //            {
-    //                Statistic3.Text += " (looking at this collider the most)";
-    //                smallestDot = lookToSurfaceDot;
-    //                relativeUp = surfaceNormal;
-    //
-    //                //CLIMBING/WALLRUNNING
-    //                //If THIS PARTICULAR surface is inclined enough, then we're climbing/wallrunning, and can only do this if we have wallEnergy
-    //                float surfaceMovingIntoSlant = Vector3.Up.Dot(surfaceNormal);
-    //                Statistic4.Text = $"surfaceMovingIntoSlant: {surfaceMovingIntoSlant}";
-    //                if (surfaceMovingIntoSlant < 0.75f) //45 degrees
-    //                {
-    //                    //Slanted surface
-    //                    IsTryingToMoveOnWall = true;
-    //
-    //                    //Out of climb energy
-    //                    if (ClimbEnergy <= 0f)
-    //                    {
-    //                        //Reduce movement force
-    //                        moveForce = 0f;
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
-    //
-    //    Vector3 moveDirection = wishDirection;
-    //
-    //
-    //    
-    //    //TODO: allow for running down hills without running into the air
-    //
-    //
-    //    //Move along surface
-    //    moveDirection -= relativeUp * wishDirection.Dot(relativeUp);
-    //    moveDirection = moveDirection.Normalized();
-    //
-    //    Statistic5.Text = $"moveDirection: {moveDirection}";
-    //    TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + moveDirection * 2.0f;
-    //
-    //    Statistic6.Text = $"moveForce: {moveForce}";
-    //
-    //    ApplyForce(moveDirection * moveForce);
-    //}
 }
