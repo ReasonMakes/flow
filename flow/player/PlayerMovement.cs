@@ -29,12 +29,14 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputRunRight = false;
     private bool InputRunBack = false;
 
-    public float ThrustForce = 10000f;
+    public float ThrustForce = 10000f; //public variable because slider attached
     //TODO: add twitch/jerk
     //TODO: add greatly reduced friction unless thrusting along flat surface
 
     //Jump
     private bool InputJump = false;
+
+    private const float JumpForce = 500f;
 
     //Wall/ceiling thrusting
     private bool OnFlat = false;
@@ -42,6 +44,9 @@ public partial class PlayerMovement : RigidBody3D
     private float ClimbEnergy = 1f;
     private const float ClimbRestRate = 4f; //multiplied with delta
     private const float ClimbTireRate = 1f; //multiplied with delta
+
+    //Testing
+    private bool TestPrint = false;
 
     public override void _Input(InputEvent @event)
     {
@@ -51,6 +56,8 @@ public partial class PlayerMovement : RigidBody3D
         InputRunRight = Input.IsActionPressed("thrust_run_dir_right");
         InputRunBack = Input.IsActionPressed("thrust_run_dir_back");
         InputJump = Input.IsActionPressed("thrust_jump");
+
+        TestPrint = Input.IsActionJustPressed("thrust_dash");
 
         //Look
         if (@event is InputEventMouseMotion mouseMotion)
@@ -108,8 +115,6 @@ public partial class PlayerMovement : RigidBody3D
         Statistic7.Text = $"IsWishingIntoSlope: {IsWishingIntoSlope}";
 
         Statistic8.Text = $"Climb energy: {ClimbEnergy}";
-
-        //Statistic9.Text = $"Looking horizontally: {Mathf.Abs(-CameraPlayer.GlobalBasis.Z.Dot(Vector3.Up)) < 0.5f}";
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
@@ -194,6 +199,8 @@ public partial class PlayerMovement : RigidBody3D
             }
         }
 
+        Statistic6.Text = $"onFlat: {OnFlat}, onSlope: {onSlope}";
+
         //RE-DIRECTION ALONG COLLIDER SURFACE TANGENT
         //Permutations:
         //- flat surface tangents [redirect wish tangent to surface]
@@ -207,6 +214,8 @@ public partial class PlayerMovement : RigidBody3D
             wishDirection = wishDirectionRaw;
         }
 
+        //TODO: climbing up slopes fails if not looking at the slope (such as if looking up too much)
+
         //Get direction along (tangent to) surface (if surface is flat, this is the last step. If in air, wishIntoNormal defaults to Vector3.Up)
         Vector3 thrustDirection = (wishDirection - (wishIntoNormal * wishDirection.Dot(wishIntoNormal))).Normalized();
 
@@ -215,18 +224,21 @@ public partial class PlayerMovement : RigidBody3D
         {
             if (onSlope)
             {
-                if (ClimbEnergy > 0f && !OnFlat && thrustDirection != Vector3.Zero)
+                if (ClimbEnergy > 0f && !OnFlat && thrustDirection != Vector3.Zero) //wishing to thrust
                 {
                     Statistic9.Text = $"camera-surface dot: {-CameraPlayer.GlobalBasis.Z.Dot(wishIntoNormal)}";
                     bool isLookingAtSurface = -CameraPlayer.GlobalBasis.Z.Dot(wishIntoNormal) < -0.5f;
                     if (!isLookingAtSurface)
                     {
                         //Wall-running
+                        
+                        //TODO: change this from look direction to thrust direction so that we can wallrun while looking elsewhere
                         //TODO: add sticking (can EITHER be not looking at surface or be already stuck. We unstick once we're no longer on a slope)
+                        
                         thrustDirection = new Vector3(thrustDirection.X, 0f, thrustDirection.Z).Normalized();
 
-                        //ApplyForce(-GetGravity());
-                        LinearVelocity = new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z);
+                        ApplyForce(-GetGravity());
+                        //LinearVelocity = new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z);
 
                         Statistic10.Text = $"Wallrunning";
                     }
@@ -250,8 +262,8 @@ public partial class PlayerMovement : RigidBody3D
                 }
             }
             else if ( //wishing to thrust down
-                -CameraPlayer.GlobalBasis.Z.Dot(Vector3.Up) < 0f //Looking generally-down
-                && thrustDirection.Dot(Vector3.Up) <= 0f         //Not wishing to go uphill; wish is flat (will be > 0f if going uphill) or downward (I don't think it will ever be downward)
+                //-CameraPlayer.GlobalBasis.Z.Dot(Vector3.Up) < 0f //Looking generally-down
+                thrustDirection.Dot(Vector3.Up) <= 0f         //Not wishing to go uphill; wish is flat (will be > 0f if going uphill) or downward (I don't think it will ever be downward)
             )
             {
                 //onFlat
@@ -275,16 +287,16 @@ public partial class PlayerMovement : RigidBody3D
             }
         }
 
-        Statistic6.Text = $"onFlat: {OnFlat}, onSlope: {onSlope}";
-
         thrustDirection = thrustDirection.Normalized();
         ApplyForce(thrustDirection * thrustForce);
 
-        TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
-
+        //Jump
         if (InputJump && OnFlat)
         {
-            ApplyImpulse(Vector3.Up * 500f);
+            ApplyImpulse(Vector3.Up * JumpForce);
         }
+
+        TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
+        if (TestPrint) TestPrint = false;
     }
 }
