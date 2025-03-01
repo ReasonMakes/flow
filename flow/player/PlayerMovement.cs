@@ -105,10 +105,11 @@ public partial class PlayerMovement : RigidBody3D
         Statistic4.Text = $"VSpeed: {LinearVelocity.Y}";
         Statistic5.Text = $"Angular velocity: {AngularVelocity}";
 
-        Statistic6.Text = $"IsOnFlatSurface: {OnFlat}";
-        Statistic7.Text = $"IsTryingToThrustIntoWall: {IsWishingIntoSlope}";
+        Statistic7.Text = $"IsWishingIntoSlope: {IsWishingIntoSlope}";
 
-        Statistic13.Text = $"Climb energy: {ClimbEnergy}";
+        Statistic8.Text = $"Climb energy: {ClimbEnergy}";
+
+        //Statistic9.Text = $"Looking horizontally: {Mathf.Abs(-CameraPlayer.GlobalBasis.Z.Dot(Vector3.Up)) < 0.5f}";
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
@@ -147,19 +148,12 @@ public partial class PlayerMovement : RigidBody3D
 
         float thrustForce = ThrustForce;
 
-        Statistic8.Text = "";
-        Statistic9.Text = "";
-        Statistic10.Text = "";
-        Statistic11.Text = "";
-        Statistic12.Text = "";
-
         int contactCount = state.GetContactCount();
         if (contactCount > 0)
         {
             for (int i = 0; i < contactCount; i++)
             {
                 Vector3 surfaceNormal = state.GetContactLocalNormal(i);
-                Statistic13.Text = $"Vector3.Up.Dot(surfaceNormal): {Vector3.Up.Dot(surfaceNormal)}";
 
                 if (Vector3.Up.Dot(surfaceNormal) < 0.75f)
                 {
@@ -216,12 +210,28 @@ public partial class PlayerMovement : RigidBody3D
         //Get direction along (tangent to) surface (if surface is flat, this is the last step. If in air, wishIntoNormal defaults to Vector3.Up)
         Vector3 thrustDirection = (wishDirection - (wishIntoNormal * wishDirection.Dot(wishIntoNormal))).Normalized();
 
+        Statistic10.Text = "";
         if (contactCount > 0)
         {
-            Statistic12.Text = $"thrustDirection.Dot(Vector3.Up): {thrustDirection.Dot(Vector3.Up)}; onSlope: {onSlope}";
             if (onSlope)
             {
-                if (ClimbEnergy <= 0f && thrustDirection.Dot(Vector3.Up) > 0f) //wishing to thrust up
+                if (ClimbEnergy > 0f && !OnFlat && thrustDirection != Vector3.Zero)
+                {
+                    Statistic9.Text = $"camera-surface dot: {-CameraPlayer.GlobalBasis.Z.Dot(wishIntoNormal)}";
+                    bool isLookingAtSurface = -CameraPlayer.GlobalBasis.Z.Dot(wishIntoNormal) < -0.5f;
+                    if (!isLookingAtSurface)
+                    {
+                        //Wall-running
+                        //TODO: add sticking (can EITHER be not looking at surface or be already stuck. We unstick once we're no longer on a slope)
+                        thrustDirection = new Vector3(thrustDirection.X, 0f, thrustDirection.Z).Normalized();
+
+                        //ApplyForce(-GetGravity());
+                        LinearVelocity = new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z);
+
+                        Statistic10.Text = $"Wallrunning";
+                    }
+                }
+                else if (ClimbEnergy <= 0f && thrustDirection.Dot(Vector3.Up) > 0f) //wishing to thrust up
                 {
                     //Limit if tired-wishing on slope
                     //If wishing to thrust up, redirect wish to be tangent to the horizontal component of the surface
@@ -237,12 +247,6 @@ public partial class PlayerMovement : RigidBody3D
                     float dotWishToNormal = wishDirection.Dot(wishIntoNormal);
                     float forceMultiplier = 1f - Mathf.Max(0f, -dotWishToNormal);
                     thrustForce *= 1f - Mathf.Max(0f, -dotWishToNormal);
-
-                    Statistic8.Text = "Tired-wishing on slope";
-                    Statistic9.Text = $"dotWishToNormal: {dotWishToNormal}";
-                    Statistic10.Text = $"forceMultiplier: {forceMultiplier}";
-                    Statistic11.Text = $"thrustForce: {thrustForce}";
-                    Statistic12.Text = $"thrustDirection: {thrustDirection}";
                 }
             }
             else if ( //wishing to thrust down
