@@ -2,7 +2,7 @@ using Godot;
 
 public partial class PlayerMovement : RigidBody3D
 {
-    //Testing
+    //Diagnostics
     [Export] private Label Statistic2;
     [Export] private Label Statistic3;
     [Export] private Label Statistic4;
@@ -38,13 +38,18 @@ public partial class PlayerMovement : RigidBody3D
     private const float ThrustTwitchSpeedMax = 8f; //if above ThrustTwitchSpeedMin and below this speed when wishing to thrust,
     
     //Wall/ceiling thrusting
-    private const float SlopeDotUp = 0.75f; //What angle (as a dot product of the surface normal to global up)
-                                            //constitutes a slope vs a flat surface and engages climbing/wallrunning
-                                            //-1 is down, 0 is toward the horizon, 1 is up
+    private const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface
+                                                     //LESS THAN this values is a slope and engages climbing/wallrunning
+                                                     //This is the dot product of the normal of the surface to global up
+                                                     //-1 is down, 0 is toward the horizon, 1 is up
+                                                     //cos(angle) = dot :. angle = cos^-1(dot)
     private bool OnFlat = false;
     private bool OnSlope = false;
+
     private bool IsWishingIntoSlope = false;
     private bool IsWallRunning = false;
+    private Vector3 WallNormal = Vector3.Up;
+
     private float ClimbEnergy = 1f;
     private const float ClimbRestRate = 4f; //multiplied with delta
     private const float ClimbTireRate = 1f; //multiplied with delta
@@ -99,10 +104,10 @@ public partial class PlayerMovement : RigidBody3D
         if (@event is InputEventMouseMotion mouseMotion)
         {
             //Yaw
-            CameraPlayer.CameraGrandparent.Rotation = new Vector3(
-                CameraPlayer.CameraGrandparent.Rotation.X,
-                CameraPlayer.CameraGrandparent.Rotation.Y - mouseMotion.Relative.X * MouseSensitivity,
-                CameraPlayer.CameraGrandparent.Rotation.Z
+            CameraPlayer.CameraParent.Rotation = new Vector3(
+                CameraPlayer.CameraParent.Rotation.X,
+                CameraPlayer.CameraParent.Rotation.Y - mouseMotion.Relative.X * MouseSensitivity,
+                CameraPlayer.CameraParent.Rotation.Z
             );
 
             //Pitch, clamp to straight up or down
@@ -127,9 +132,10 @@ public partial class PlayerMovement : RigidBody3D
         float delta = (float)deltaDouble;
 
         //Unfreeze once game started
-        if (Time.GetTicksMsec() > 2000f)
+        if (Time.GetTicksMsec() > 4000f)
         {
             Freeze = false;
+            //GlobalPosition = new Vector3(GlobalPosition.X, 1f, GlobalPosition.Z);
         }
 
         //Process climb energy
@@ -142,10 +148,11 @@ public partial class PlayerMovement : RigidBody3D
             ClimbEnergy = Mathf.Max(0f, ClimbEnergy - (delta * ClimbTireRate));
         }
 
-
+        //Diagnostics
         string testSpeed = LinearVelocity.Length() != 0f && LinearVelocity.Length() < 0.1f ? "<0.1" : $"{LinearVelocity.Length():F2}";
         Statistic2.Text = $"Speed: {testSpeed}";
-        string testHSpeed = new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z).Length() != 0f && new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z).Length() < 0.1f ? "<0.1" : $"{new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z).Length():F2}";
+        float hSpeed = new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z).Length();
+        string testHSpeed = hSpeed != 0f && hSpeed < 0.1f ? "<0.1" : $"{hSpeed:F2}";
         Statistic3.Text = $"HSpeed: {testHSpeed}";
         string testVSpeed = LinearVelocity.Y != 0f && Mathf.Abs(LinearVelocity.Y) < 0.1f ? "<+/-0.1" : $"{LinearVelocity.Y:F2}";
         Statistic4.Text = $"VSpeed: {testVSpeed}";
@@ -160,10 +167,29 @@ public partial class PlayerMovement : RigidBody3D
     {
         float delta = state.Step;
 
-        Vector3 thrustDirection = GetDirection(state);
+        //Thrust/run
+        Vector3 wishDirectionRaw = GetWishDirectionRaw();
 
-        //MAGNITUDE
-        ApplyAccelerationAndDragOverTime(ProcessMovementAndGetVector(thrustDirection, delta), delta);
+        //PhysicsMaterialOverride.Friction = wishDirectionRaw == Vector3.Zero ? 1f : 0f; //maybe lerp these?
+        //Friction when standing on flat
+        if (OnFlat && wishDirectionRaw == Vector3.Zero)
+        {
+            PhysicsMaterialOverride.Friction = 1f;
+        }
+        else
+        {
+            PhysicsMaterialOverride.Friction = 0f;
+        }
+
+        Vector3 thrustDirection = GetDirection(wishDirectionRaw, state);
+        Vector3 finalThrustVector = ProcessMovementAndGetVector(thrustDirection, delta);
+        ApplyAccelerationAndDragOverTime(finalThrustVector, delta);
+
+        
+
+        //Wallrunning anti-gravity
+        if (IsWallRunning) ApplyForce(Mass * -GetGravity()); //F = ma TODO: make this start to weaken only right before climb energy runs out
+
 
         //JUMP
         if (InputJump && OnFlat)
@@ -171,7 +197,7 @@ public partial class PlayerMovement : RigidBody3D
             ApplyImpulse(Vector3.Up * JumpForce);
         }
 
-        //TEST
+        //Diagnostics
         TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
     }
 
@@ -240,36 +266,40 @@ public partial class PlayerMovement : RigidBody3D
             finalMoveOnWallVector = Run(wishDirection, delta);
         }
 
-        ////Wall-running camera roll
-        //if (IsWallRunning)
-        //{
-        //    if (IsWishingIntoSlope)
-        //    {
-        //        //Set roll
-        //        CameraPlayer.Rotation = new Vector3(
-        //            CameraPlayer.Rotation.X,
-        //            CameraPlayer.Rotation.Y,
-        //            Mathf.LerpAngle(
-        //                CameraPlayer.Rotation.Z,
-        //                Mathf.Tau / 16f * Mathf.Sign(GetWallNormal().Dot(-GlobalBasis.X)), //roll rotation
-        //                10f * delta //interpolate speed
-        //            )
-        //        );
-        //    }
-        //}
-        //else
-        //{
-        //    //Reset roll
-        //    CameraPlayer.Rotation = new Vector3(
-        //        CameraPlayer.Rotation.X,
-        //        CameraPlayer.Rotation.Y,
-        //        Mathf.LerpAngle(
-        //            CameraPlayer.Rotation.Z,
-        //            0f, //roll rotation
-        //            10f * delta //interpolate speed
-        //        )
-        //    );
-        //}
+        //Wall-running camera roll
+        if (IsWallRunning)
+        {
+            if (IsWishingIntoSlope)
+            {
+                //TODO: roll into the wall regardless of where we're looking - rn this acts weird if looking directly away from the wall
+
+                //Set roll
+                float rollDirection = Mathf.Sign(WallNormal.Dot(-CameraPlayer.GlobalBasis.X)); //1f or -1f
+
+                CameraPlayer.CameraGrandparent.Rotation = new Vector3(
+                    CameraPlayer.CameraGrandparent.Rotation.X,
+                    CameraPlayer.CameraGrandparent.Rotation.Y,
+                    Mathf.LerpAngle(
+                        CameraPlayer.CameraGrandparent.Rotation.Z,
+                        Mathf.Tau / 16f * rollDirection, //roll rotation
+                        10f * delta //interpolate speed
+                    )
+                );
+            }
+        }
+        else
+        {
+            //Reset roll
+            CameraPlayer.CameraGrandparent.Rotation = new Vector3(
+                CameraPlayer.CameraGrandparent.Rotation.X,
+                CameraPlayer.CameraGrandparent.Rotation.Y,
+                Mathf.LerpAngle(
+                    CameraPlayer.CameraGrandparent.Rotation.Z,
+                    0f, //roll rotation
+                    15f * delta //interpolate speed
+                )
+            );
+        }
 
         return finalMoveOnWallVector;
     }
@@ -362,52 +392,18 @@ public partial class PlayerMovement : RigidBody3D
         return runVector;
     }
 
-
-    //public override void _IntegrateForces(PhysicsDirectBodyState3D state)
-    //{
-    //    Vector3 thrustDirection = GetDirection(state);
-    //
-    //    //MAGNITUDE
-    //    //PhysicsMaterialOverride.Friction = 100000000f;
-    //    //ApplyForce(thrustDirection * thrustForce);
-    //
-    //    float speed = LinearVelocity.Length();
-    //    if (
-    //        thrustDirection != Vector3.Zero
-    //        && OnFlat
-    //        && speed >= ThrustTwitchSpeedMin
-    //        && speed <= ThrustTwitchSpeedMax
-    //        && LinearVelocity.Dot(thrustDirection) < speed //velocity component in thrust direction is less than speed
-    //    )
-    //    {
-    //        LinearVelocity = thrustDirection * speed;
-    //    }
-    //    else if (LinearVelocity.Dot(thrustDirection) < ThrustSpeedMax) //below max speed
-    //    {
-    //        //TODO: this allows for really extreme air strafing!
-    //        LinearVelocity += thrustDirection * ThrustAcceleration;
-    //    }
-    //
-    //    //JUMP
-    //    if (InputJump && OnFlat)
-    //    {
-    //        ApplyImpulse(Vector3.Up * JumpForce);
-    //    }
-    //
-    //    //TEST
-    //    TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
-    //    if (TestPrint) TestPrint = false;
-    //}
-
-    private Vector3 GetDirection(PhysicsDirectBodyState3D state)
+    private Vector3 GetWishDirectionRaw()
     {
-        //GET WISH DIRECTION
         Vector3 wishDirectionRaw = Vector3.Zero;
         if (InputForward) wishDirectionRaw -= CameraPlayer.GlobalBasis.Z;
         if (InputLeft) wishDirectionRaw -= CameraPlayer.GlobalBasis.X;
         if (InputRight) wishDirectionRaw += CameraPlayer.GlobalBasis.X;
         if (InputBack) wishDirectionRaw += CameraPlayer.GlobalBasis.Z;
+        return wishDirectionRaw;
+    }
 
+    private Vector3 GetDirection(Vector3 wishDirectionRaw, PhysicsDirectBodyState3D state)
+    {
         //Convert camera look to flat plane
         //this step MUST be skipped if we want to be able to climb straight-up or inverted inclines
         //yet, this step is ABSOLUTELY NECESSARY if we want to prevent staying on walls even when tired
@@ -516,21 +512,18 @@ public partial class PlayerMovement : RigidBody3D
                     && thrustDirection.Dot(Vector3.Up) < SlopeDotUp //not wishing to thrust up (climb). Could also use surfaceNormalWishingInto
                 )
                 {
-                    Statistic9.Text = $"camera-surface dot: {-CameraPlayer.GlobalBasis.Z.Dot(surfaceNormalWishingInto)}";
-                    bool isLookingAtSurface = -CameraPlayer.GlobalBasis.Z.Dot(surfaceNormalWishingInto) < -0.5f;
+                    Statistic9.Text = $"Wish-surface dot: {wishDirectionRaw.Dot(surfaceNormalWishingInto)}";
+                    bool isLookingAtSurface = wishDirectionRaw.Dot(surfaceNormalWishingInto) < -0.5f;
                     if (!isLookingAtSurface)
                     {
                         //Wall-running
                         IsWallRunning = true;
+                        WallNormal = surfaceNormalWishingInto;
 
                         //TODO: change this from look direction to thrust direction so that we can wallrun while looking elsewhere
                         //TODO: add sticking (can EITHER be not looking at surface or be already stuck. We unstick once we're no longer on a slope)
 
                         thrustDirection = new Vector3(thrustDirection.X, 0f, thrustDirection.Z).Normalized();
-
-                        //ApplyImpulse(Vector3.Up * JumpForce);
-                        ApplyForce(Mass * -GetGravity()); //F = ma TODO: make this start to weaken only right before climb energy runs out
-                        //LinearVelocity = new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z);
 
                         Statistic10.Text = $"Wallrunning, thrustDirection.Dot(Vector3.Up): {thrustDirection.Dot(Vector3.Up)}";
                     }

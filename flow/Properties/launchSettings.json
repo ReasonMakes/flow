@@ -3,7 +3,7 @@
     "Flow": {
       "commandName": "Project"
     },
-    "Flow Testing": {
+    "Flow Diagnostic": {
       "commandName": "Executable",
       "executablePath": "C:\\Program Files\\Godot 4.3 Mono\\Godot_v4.3-stable_mono_win64.exe",
       "commandLineArgs": "--path.--verbose",
