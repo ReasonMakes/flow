@@ -733,7 +733,7 @@ visible = false
 fov = 84.5
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 27)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 17, -9)
 shadow_enabled = true
 omni_range = 38.66
 omni_attenuation = 0.465
