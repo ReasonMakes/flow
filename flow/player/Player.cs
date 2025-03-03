@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-public partial class Player : Node3D
+public partial class Player : Node
 {
     public bool IsAlive = true;
 
@@ -34,7 +34,7 @@ public partial class Player : Node3D
     public void Respawn()
     {
         //PlayerMovement.Velocity = Vector3.Zero;
-        PlayerMovement.GlobalPosition = GlobalPosition;
+        //PlayerMovement.GlobalPosition = GlobalPosition;
 
         HUD.LabelDead.Visible = false;
 
