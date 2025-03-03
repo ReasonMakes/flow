@@ -30,6 +30,7 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputBack = false;
 
     public float ThrustForce = 1f; //public variable because slider attached
+    
     private float ThrustForceTiredWallClimbCoefficient = 1f; //this is dynamically modified when tired-climbing
 
     //Wall/ceiling thrusting
@@ -45,9 +46,14 @@ public partial class PlayerMovement : RigidBody3D
     private bool IsWallRunning = false;
     private Vector3 WallNormal = Vector3.Up;
 
+    private bool IsClimbing = false;
+
     private float ClimbEnergy = 1f;
-    private const float ClimbRestRate = 4f; //multiplied with delta
-    private const float ClimbTireRate = 1f; //multiplied with delta
+    private const float ClimbRestRate = 1f; //multiplied with delta
+    private const float ClimbTireRate = 0.1f; //multiplied with delta
+
+    private const float ThrustAccelerationClimbCoefficient = 0.5f;
+    private const float ClimbMaxVSpeed = 10f;
 
     //Crouching/sliding
     private bool InputCrouch = false;
@@ -59,8 +65,6 @@ public partial class PlayerMovement : RigidBody3D
     private const float DragSlidingCoefficient = 0.05f;
     private const float DragWallrunningCoefficient = 1f;
     
-    private bool IsClimbing = false;
-
     private const float ThrustAcceleration = 250f;
     private const float ThrustAccelerationInAirCoefficient = 0.4f;
     private const float ThrustAccelerationSlidingCoefficient = 0.075f;
@@ -117,10 +121,10 @@ public partial class PlayerMovement : RigidBody3D
         }
     }
 
-    public void UpdateThrustForce(float val)
-    {
-        ThrustForce = val;
-    }
+    //public void UpdateThrustForce(float val)
+    //{
+    //    ThrustForce = val;
+    //}
 
     public override void _PhysicsProcess(double deltaDouble)
     {
@@ -138,7 +142,7 @@ public partial class PlayerMovement : RigidBody3D
         {
             ClimbEnergy = Mathf.Min(1f, ClimbEnergy + (delta * ClimbRestRate));
         }
-        else if (IsWishingIntoSlope)
+        else if (IsWishingIntoSlope || IsWallRunning)
         {
             ClimbEnergy = Mathf.Max(0f, ClimbEnergy - (delta * ClimbTireRate));
         }
@@ -329,6 +333,7 @@ public partial class PlayerMovement : RigidBody3D
         //while allowing us to maintain responsive air acceleration
 
         //+ if aligned, - if opposite, 0 if perpendicular
+        //float runAlignment = wishDirection.Dot(new(LinearVelocity.X, 0f, LinearVelocity.Z));
         float runAlignment = wishDirection.Dot(new(LinearVelocity.X, 0f, LinearVelocity.Z));
 
         //Gradient value from 0 to 1, with:
@@ -342,15 +347,25 @@ public partial class PlayerMovement : RigidBody3D
         }
         float runAlignmentScaled = Mathf.Clamp(1f - runAlignment / runDynamicMaxSpeed, 0f, 1f);
 
+        Statistic15.Text = $"IsClimbing: {IsClimbing}";
         //TWITCH ACCELERATION
-        if (InputCrouch)
+        if (IsSliding)
         {
             //Different acceleration when crouched/sliding
             runDynamicAccelerationTwitch *= ThrustAccelerationSlidingCoefficient;
         }
+        else if (IsWishingIntoSlope && !IsWallRunning)
+        {
+            //TODO: this needs to be aligned!!
+            if (LinearVelocity.Y >= ClimbMaxVSpeed)
+            {
+                runDynamicAccelerationTwitch = 0f;
+            }
+            runDynamicAccelerationTwitch *= ThrustAccelerationClimbCoefficient;
+        }
         else if (!OnFlat && !OnSlope)
         {
-            //Ground vs Air Acceleration
+            //Air Acceleration
             runDynamicAccelerationTwitch *= ThrustAccelerationInAirCoefficient;
         }
 
@@ -520,8 +535,9 @@ public partial class PlayerMovement : RigidBody3D
         Vector3 thrustDirection = (wishDirection - (surfaceNormalWishingInto * wishDirection.Dot(surfaceNormalWishingInto))).Normalized();
 
         //Default
+        ThrustForceTiredWallClimbCoefficient = 1f;
         Statistic10.Text = "Not wallrunning";
-        if (!OnSlope || thrustDirection == Vector3.Zero) {
+        if (!OnSlope || thrustDirection == Vector3.Zero || ClimbEnergy <= 0f) {
             IsWallRunning = false;
         }
 
