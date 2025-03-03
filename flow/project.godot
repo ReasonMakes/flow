@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Flow"
 run/main_scene="res://root.tscn"
-config/features=PackedStringArray("4.3", "C#", "Forward Plus")
+config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
 [audio]
@@ -74,9 +74,9 @@ thrust_dash={
 
 [physics]
 
-common/physics_ticks_per_second=360
-3d/physics_engine="JoltPhysics3D"
+3d/physics_engine="Jolt Physics"
 3d/default_gravity=20.0
+common/physics_interpolation=true
 
 [rendering]
 
