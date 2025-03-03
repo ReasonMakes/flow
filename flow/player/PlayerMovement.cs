@@ -30,12 +30,6 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputBack = false;
 
     public float ThrustForce = 10000f; //public variable because slider attached
-    //private const float ThrustAcceleration = 0.2f;
-    private const float ThrustSpeedMax = 12f;
-    //TODO: add twitch/jerk
-    //TODO: add greatly reduced friction unless thrusting along flat surface
-    private const float ThrustTwitchSpeedMin = 4f; //speed we must have already developed in order to have the agility to twitch
-    private const float ThrustTwitchSpeedMax = 8f; //if above ThrustTwitchSpeedMin and below this speed when wishing to thrust,
     
     //Wall/ceiling thrusting
     private const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface
@@ -269,39 +263,75 @@ public partial class PlayerMovement : RigidBody3D
         //Wall-running camera roll
         if (IsWallRunning)
         {
-            if (IsWishingIntoSlope)
-            {
-                //TODO: roll into the wall regardless of where we're looking - rn this acts weird if looking directly away from the wall
-
-                //Set roll
-                float rollDirection = Mathf.Sign(WallNormal.Dot(-CameraPlayer.GlobalBasis.X)); //1f or -1f
-
-                CameraPlayer.CameraGrandparent.Rotation = new Vector3(
-                    CameraPlayer.CameraGrandparent.Rotation.X,
-                    CameraPlayer.CameraGrandparent.Rotation.Y,
-                    Mathf.LerpAngle(
-                        CameraPlayer.CameraGrandparent.Rotation.Z,
-                        Mathf.Tau / 16f * rollDirection, //roll rotation
-                        10f * delta //interpolate speed
-                    )
-                );
-            }
+            RotateSlerpTowardVector(WallNormal, delta);
         }
         else
         {
-            //Reset roll
-            CameraPlayer.CameraGrandparent.Rotation = new Vector3(
-                CameraPlayer.CameraGrandparent.Rotation.X,
-                CameraPlayer.CameraGrandparent.Rotation.Y,
-                Mathf.LerpAngle(
-                    CameraPlayer.CameraGrandparent.Rotation.Z,
-                    0f, //roll rotation
-                    15f * delta //interpolate speed
-                )
-            );
+            RotateSlerpTowardVector(Vector3.Up, delta);
         }
 
+        //if (IsWallRunning)
+        //{
+        //    if (IsWishingIntoSlope)
+        //    {
+        //        //TODO: roll into the wall regardless of where we're looking - rn this acts weird if looking directly away from the wall
+        //
+        //        //Set roll
+        //        float rollDirection = Mathf.Sign(WallNormal.Dot(-CameraPlayer.GlobalBasis.X)); //1f or -1f
+        //
+        //        CameraPlayer.CameraGrandparent.Rotation = new Vector3(
+        //            CameraPlayer.CameraGrandparent.Rotation.X,
+        //            CameraPlayer.CameraGrandparent.Rotation.Y,
+        //            Mathf.LerpAngle(
+        //                CameraPlayer.CameraGrandparent.Rotation.Z,
+        //                Mathf.Tau / 16f * rollDirection, //roll rotation
+        //                10f * delta //interpolate speed
+        //            )
+        //        );
+        //    }
+        //}
+        //else
+        //{
+        //    //Reset roll
+        //    CameraPlayer.CameraGrandparent.Rotation = new Vector3(
+        //        CameraPlayer.CameraGrandparent.Rotation.X,
+        //        CameraPlayer.CameraGrandparent.Rotation.Y,
+        //        Mathf.LerpAngle(
+        //            CameraPlayer.CameraGrandparent.Rotation.Z,
+        //            0f, //roll rotation
+        //            15f * delta //interpolate speed
+        //        )
+        //    );
+        //}
+
         return finalMoveOnWallVector;
+    }
+
+    private void RotateSlerpTowardVector(Vector3 targetVector, float delta)
+    {
+        //Rotation direction: from Vector3.Up toward WallNormal (Vector3)
+        //Rotation subject (Vector3): CameraPlayer.CameraGrandparent.Rotation
+
+        float rotationSpeed = 10f;
+
+        Quaternion targetQuat = new Quaternion(Vector3.Up, targetVector); // Rotation towards WallNormal
+
+        // Get the current rotation as a quaternion
+        Quaternion currentQuat = CameraPlayer.CameraGrandparent.GlobalTransform.Basis.GetRotationQuaternion();
+
+        // Smoothly interpolate rotation
+        Quaternion newQuat = currentQuat.Slerp(targetQuat, rotationSpeed * delta);
+
+        // Apply the new rotation
+        Transform3D newTransform = CameraPlayer.CameraGrandparent.GlobalTransform;
+        newTransform.Basis = new Basis(newQuat);
+        CameraPlayer.CameraGrandparent.GlobalTransform = newTransform;
+
+        ////Spins forever, very quickly
+        //Quaternion rotationQuat = new(Vector3.Up, WallNormal);
+        //Transform3D newTransform = CameraPlayer.CameraGrandparent.GlobalTransform;
+        //newTransform.Basis = new Basis(rotationQuat) * newTransform.Basis;
+        //CameraPlayer.CameraGrandparent.GlobalTransform = newTransform;
     }
 
     private Vector3 Run(Vector3 wishDirection, float delta)
@@ -420,21 +450,27 @@ public partial class PlayerMovement : RigidBody3D
         //- LinearVelocity  Velocity vector into a collider
         //- GetGravity()    Gravity vector into a collider
 
+        //Surface flags
         OnFlat = false;
         bool onSlope = false;
-        
+
+        //Climbing/wallrunning flags
+        bool isCurrentCheckAWishIntoASlope = false;
+        IsWishingIntoSlope = false;
+
+        //Surface
         float surfaceNormalDotWishSmallest = 1f;
         Vector3 surfaceNormalWishingInto = Vector3.Up;
 
+        //Wallrunning surface (no default/nullable)
         bool isWallNormalAssigned = false;
         float wallNormalDot = 1f;
         Vector3? wallNormal = null;
 
-        bool isCurrentCheckAWishIntoASlope = false;
-        IsWishingIntoSlope = false;
-
+        //Dynamic thrust force default (attenuated when tired-thrusting into a slope)
         float thrustForce = ThrustForce;
 
+        //Collision detection
         int contactCount = state.GetContactCount();
         if (contactCount > 0)
         {
@@ -540,11 +576,8 @@ public partial class PlayerMovement : RigidBody3D
                     {
                         //Wall-running flag
                         IsWallRunning = true;
-                        
-                        //TODO: change this from look direction to thrust direction so that we can wallrun while looking elsewhere
-                        //TODO: add sticking (can EITHER be not looking at surface or be already stuck. We unstick once we're no longer on a slope)
 
-                        //thrustDirection = new Vector3(thrustDirection.X, 0f, thrustDirection.Z).Normalized();
+                        //TODO: allow walljumping or moving directly into the wall to end wallrunning.
                     }
                 }
                 else if (
@@ -571,12 +604,11 @@ public partial class PlayerMovement : RigidBody3D
                 //Wall-running redirect
                 if (IsWallRunning)
                 {
-                    //Camera tilt
+                    //Get wall normal for camera tilt and for transforming the thrust direction to be tangent to the wall and the horizontal component only
                     if (wallNormal.HasValue)
                     {
                         WallNormal = (Vector3)wallNormal;
                     }
-                    //WallNormal = surfaceNormalWishingInto;
 
                     //Stick to wall
                     thrustDirection = (wishDirection - (WallNormal * wishDirection.Dot(WallNormal))).Normalized();
