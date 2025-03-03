@@ -29,8 +29,9 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputRight = false;
     private bool InputBack = false;
 
-    public float ThrustForce = 10000f; //public variable because slider attached
-    
+    public float ThrustForce = 1f; //public variable because slider attached
+    private float ThrustForceTiredWallClimbCoefficient = 1f; //this is dynamically modified when tired-climbing
+
     //Wall/ceiling thrusting
     private const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface
                                                      //LESS THAN this values is a slope and engages climbing/wallrunning
@@ -126,7 +127,7 @@ public partial class PlayerMovement : RigidBody3D
         float delta = (float)deltaDouble;
 
         //Unfreeze once game started
-        if (Time.GetTicksMsec() > 4000f)
+        if (Time.GetTicksMsec() > 6000f)
         {
             Freeze = false;
             //GlobalPosition = new Vector3(GlobalPosition.X, 1f, GlobalPosition.Z);
@@ -177,7 +178,7 @@ public partial class PlayerMovement : RigidBody3D
 
         Vector3 thrustDirection = GetDirection(wishDirectionRaw, state);
         Vector3 finalThrustVector = ProcessMovementAndGetVector(thrustDirection, delta);
-        ApplyAccelerationAndDragOverTime(finalThrustVector, delta);
+        ApplyAccelerationAndDragOverTime(finalThrustVector * (ThrustForce * ThrustForceTiredWallClimbCoefficient), delta);
 
         
 
@@ -195,7 +196,7 @@ public partial class PlayerMovement : RigidBody3D
         TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
     }
 
-    private void ApplyAccelerationAndDragOverTime(Vector3 acceleration, float delta)
+    private void ApplyAccelerationAndDragOverTime(Vector3 accelerationVector, float delta)
     {
         //DON'T MULTIPLY BY DELTA IN THE ACCELERATION ARGUMENT OF THIS METHOD!
         //Correct example usage:
@@ -212,7 +213,7 @@ public partial class PlayerMovement : RigidBody3D
 
         //Apply drag friction with an exponential decay expression to account for users with throttled physics update rates
         float decayFactor = Mathf.Exp(-dragComponent * delta);
-        LinearVelocity = acceleration / dragComponent * (1f - decayFactor) + (LinearVelocity * decayFactor);
+        LinearVelocity = accelerationVector / dragComponent * (1f - decayFactor) + (LinearVelocity * decayFactor);
     }
 
     private float GetDrag()
@@ -248,7 +249,7 @@ public partial class PlayerMovement : RigidBody3D
     private Vector3 ProcessMovementAndGetVector(Vector3 wishDirection, float delta)
     {
         //Default values
-        Vector3 finalMoveOnWallVector = Vector3.Zero;
+        Vector3 finalMoveVector = Vector3.Zero;
 
         //Do we WANT to do movement?
         if (
@@ -257,70 +258,35 @@ public partial class PlayerMovement : RigidBody3D
         )
         {
             //Running on the ground
-            finalMoveOnWallVector = Run(wishDirection, delta);
+            finalMoveVector = Run(wishDirection, delta);
         }
 
         //Wall-running camera roll
+        float wallRunCameraRollRate = 30f * delta; //Slerp() increments by this until reaching 1
         if (IsWallRunning)
         {
-            RotateSlerpTowardVector(WallNormal, delta);
+            RotateSlerpTowardVector(Vector3.Up.Slerp(WallNormal, 1f / 8f), wallRunCameraRollRate);
         }
         else
         {
-            RotateSlerpTowardVector(Vector3.Up, delta);
+            RotateSlerpTowardVector(Vector3.Up, wallRunCameraRollRate);
         }
 
-        //if (IsWallRunning)
-        //{
-        //    if (IsWishingIntoSlope)
-        //    {
-        //        //TODO: roll into the wall regardless of where we're looking - rn this acts weird if looking directly away from the wall
-        //
-        //        //Set roll
-        //        float rollDirection = Mathf.Sign(WallNormal.Dot(-CameraPlayer.GlobalBasis.X)); //1f or -1f
-        //
-        //        CameraPlayer.CameraGrandparent.Rotation = new Vector3(
-        //            CameraPlayer.CameraGrandparent.Rotation.X,
-        //            CameraPlayer.CameraGrandparent.Rotation.Y,
-        //            Mathf.LerpAngle(
-        //                CameraPlayer.CameraGrandparent.Rotation.Z,
-        //                Mathf.Tau / 16f * rollDirection, //roll rotation
-        //                10f * delta //interpolate speed
-        //            )
-        //        );
-        //    }
-        //}
-        //else
-        //{
-        //    //Reset roll
-        //    CameraPlayer.CameraGrandparent.Rotation = new Vector3(
-        //        CameraPlayer.CameraGrandparent.Rotation.X,
-        //        CameraPlayer.CameraGrandparent.Rotation.Y,
-        //        Mathf.LerpAngle(
-        //            CameraPlayer.CameraGrandparent.Rotation.Z,
-        //            0f, //roll rotation
-        //            15f * delta //interpolate speed
-        //        )
-        //    );
-        //}
-
-        return finalMoveOnWallVector;
+        return finalMoveVector;
     }
 
-    private void RotateSlerpTowardVector(Vector3 targetVector, float delta)
+    private void RotateSlerpTowardVector(Vector3 targetVector, float rotationSpeed)
     {
         //Rotation direction: from Vector3.Up toward WallNormal (Vector3)
         //Rotation subject (Vector3): CameraPlayer.CameraGrandparent.Rotation
 
-        float rotationSpeed = 10f;
-
-        Quaternion targetQuat = new Quaternion(Vector3.Up, targetVector); // Rotation towards WallNormal
+        Quaternion targetQuat = new(Vector3.Up, targetVector); // Rotation towards WallNormal
 
         // Get the current rotation as a quaternion
         Quaternion currentQuat = CameraPlayer.CameraGrandparent.GlobalTransform.Basis.GetRotationQuaternion();
 
         // Smoothly interpolate rotation
-        Quaternion newQuat = currentQuat.Slerp(targetQuat, rotationSpeed * delta);
+        Quaternion newQuat = currentQuat.Slerp(targetQuat, rotationSpeed);
 
         // Apply the new rotation
         Transform3D newTransform = CameraPlayer.CameraGrandparent.GlobalTransform;
@@ -598,7 +564,7 @@ public partial class PlayerMovement : RigidBody3D
                     //Force
                     float dotWishToNormal = wishDirection.Dot(surfaceNormalWishingInto);
                     float forceMultiplier = 1f - Mathf.Max(0f, -dotWishToNormal);
-                    thrustForce *= 1f - Mathf.Max(0f, -dotWishToNormal);
+                    ThrustForceTiredWallClimbCoefficient = thrustForce * 1f - Mathf.Max(0f, -dotWishToNormal);
                 }
 
                 //Wall-running redirect
