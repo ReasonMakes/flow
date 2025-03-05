@@ -30,7 +30,7 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputRight = false;
     private bool InputBack = false;
 
-    public float ThrustForce = 1000f; //public variable because slider attached
+    public float ThrustForce = 5e4f; //1000f; //public variable because slider attached
 
     private float ThrustForceTiredWallClimbCoefficient = 1f; //this is dynamically modified when tired-climbing
 
@@ -38,7 +38,7 @@ public partial class PlayerMovement : RigidBody3D
     private const float ThrustMaxSpeedInAir = 5f;
 
     //Twitch?
-    private const float ThrustAcceleration = 2.5e3f; //250f;
+    private const float ThrustAcceleration = 250f; //2.5e4f; //250f;
     private const float ThrustAccelerationInAirCoefficient = 0.4f;
     private const float ThrustAccelerationSlidingCoefficient = 0.075f;
 
@@ -88,6 +88,8 @@ public partial class PlayerMovement : RigidBody3D
 
     private float JumpCooldown = 0f;
     private const float JumpCooldownPeriod = 1f; //how long after jumping until you can jump again, in seconds
+    private const float JumpNoDragPeriod = 0.2f; //how long after jumping that there is no drag even if on a surface, in seconds
+                                                 //this helps to prevent jump height from being dependent on update rate
 
     private float MaxAchievedHeight = 0f;
 
@@ -159,15 +161,16 @@ public partial class PlayerMovement : RigidBody3D
         //JUMP
         if (InputJump && OnFlat && JumpCooldown <= 0f)
         {
-            GD.Print($"Friction: {PhysicsMaterialOverride.Friction}");
             ApplyImpulse(Vector3.Up * JumpForce);
-            //LinearVelocity = new Vector3(LinearVelocity.X, 10f, LinearVelocity.Z);
             JumpCooldown = JumpCooldownPeriod;
+
+            //Diagnose
             MaxAchievedHeight = 0f;
         }
         JumpCooldown = Mathf.Max(0f, JumpCooldown -= delta);
 
-        //Diagnostics
+        //DIAGNOSTICS
+        //Speed
         string testSpeed = LinearVelocity.Length() != 0f && LinearVelocity.Length() < 0.1f ? "<0.1" : $"{LinearVelocity.Length():F2}";
         Statistic2.Text = $"Speed: {testSpeed}";
         float hSpeed = new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z).Length();
@@ -177,10 +180,11 @@ public partial class PlayerMovement : RigidBody3D
         Statistic4.Text = $"VSpeed: {testVSpeed}";
         Statistic5.Text = $"Angular velocity: {AngularVelocity}";
 
+        //Climbing
         Statistic7.Text = $"IsWishingIntoSlope: {IsWishingIntoSlope}";
-
         Statistic8.Text = $"Climb energy: {ClimbEnergy}";
 
+        //Jumping
         MaxAchievedHeight = Mathf.Max(MaxAchievedHeight, GlobalPosition.Y);
         Statistic11.Text = $"MaxAchievedHeight: {MaxAchievedHeight}";
     }
@@ -192,43 +196,19 @@ public partial class PlayerMovement : RigidBody3D
         //Thrust/run
         Vector3 wishDirectionRaw = GetWishDirectionRaw();
 
-        //PhysicsMaterialOverride.Friction = wishDirectionRaw == Vector3.Zero ? 1f : 0f; //maybe lerp these?
-        //Friction when standing on flat
-        //if (OnFlat && wishDirectionRaw == Vector3.Zero)
-        //{
-        //    PhysicsMaterialOverride.Friction = 1f;
-        //}
-        //else
-        //{
-        //    PhysicsMaterialOverride.Friction = 0f;
-        //}
-
         Vector3 thrustDirection = GetDirection(wishDirectionRaw, state);
         Vector3 finalThrustVector = ProcessMovementAndGetVector(thrustDirection, delta);
-        //ApplyAccelerationAndDragOverTime(finalThrustVector * (ThrustForce * ThrustForceTiredWallClimbCoefficient), delta);
         ApplyForce(finalThrustVector * (ThrustForce * ThrustForceTiredWallClimbCoefficient * delta));
 
         //Drag
-        if (OnFlat || OnSlope)
+        if ((OnFlat || OnSlope) && JumpCooldown < JumpCooldownPeriod - JumpNoDragPeriod)
         {
-            ApplyForce(-LinearVelocity * (Mass * GetDrag() * (1f/Engine.PhysicsTicksPerSecond))); //F = ma
+            //Surface drag
+            ApplyForce(-LinearVelocity * (Mass * GetDrag() * delta)); //F = ma
         }
         
-
-        
-
         //Wallrunning anti-gravity
         if (IsWallRunning) ApplyForce(Mass * -GetGravity()); //F = ma TODO: make this start to weaken only right before climb energy runs out
-
-
-        ////JUMP
-        //if (InputJump && OnFlat && JumpCooldown <= 0f)
-        //{
-        //    GD.Print(LinearVelocity.Y);
-        //    ApplyImpulse(Vector3.Up * (JumpForce * state.Step));
-        //    JumpCooldown = JumpCooldownPeriod;
-        //    MaxAchievedHeight = 0f;
-        //}
 
         //Diagnostics
         TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
@@ -296,42 +276,38 @@ public partial class PlayerMovement : RigidBody3D
         }
 
         //Wall-running camera roll
-        float wallRunCameraRollRate = 30f * delta; //Slerp() increments by this until reaching 1
-        if (IsWallRunning)
-        {
-            RotateSlerpTowardVector(Vector3.Up.Slerp(WallNormal, 1/4f), wallRunCameraRollRate);
-        }
-        else
-        {
-            RotateSlerpTowardVector(Vector3.Up, wallRunCameraRollRate);
-        }
+        float wallrunCameraRollRate = 30f * delta; //Slerp() increments by this until reaching 1
+        float wallrunCameraRollAmount = 1f/4f;
+        Vector3 targetVector = IsWallRunning ? Vector3.Up.Slerp(WallNormal, wallrunCameraRollAmount) : Vector3.Up;
+
+        CameraPlayer.CameraGrandparent.GlobalBasis = GetRotationSlerpTowardsVector
+        (
+            CameraPlayer.CameraGrandparent.GlobalBasis,
+            targetVector,
+            wallrunCameraRollRate
+        );
 
         return finalMoveVector;
     }
 
-    private void RotateSlerpTowardVector(Vector3 targetVector, float rotationSpeed)
+    ////Very fancy lambda expression which isn't human readable AT ALL so sadly deprecating it in favour of the equivalent method below
+    //private static Basis GetRotationSlerpTowardsVector(Basis basis, Vector3 target, float rate) =>
+    //new(basis.GetRotationQuaternion().Slerp(new Quaternion(Vector3.Up, target), rate));
+    private static Basis GetRotationSlerpTowardsVector(Basis subjectBasis, Vector3 targetVector, float rotationRate)
     {
-        //Rotation direction: from Vector3.Up toward WallNormal (Vector3)
-        //Rotation subject (Vector3): CameraPlayer.CameraGrandparent.Rotation
-
-        Quaternion targetQuat = new(Vector3.Up, targetVector); // Rotation towards WallNormal
-
-        // Get the current rotation as a quaternion
-        Quaternion currentQuat = CameraPlayer.CameraGrandparent.GlobalTransform.Basis.GetRotationQuaternion();
-
-        // Smoothly interpolate rotation
-        Quaternion newQuat = currentQuat.Slerp(targetQuat, rotationSpeed);
-
-        // Apply the new rotation
-        Transform3D newTransform = CameraPlayer.CameraGrandparent.GlobalTransform;
-        newTransform.Basis = new Basis(newQuat);
-        CameraPlayer.CameraGrandparent.GlobalTransform = newTransform;
-
-        ////Spins forever, very quickly
-        //Quaternion rotationQuat = new(Vector3.Up, WallNormal);
-        //Transform3D newTransform = CameraPlayer.CameraGrandparent.GlobalTransform;
-        //newTransform.Basis = new Basis(rotationQuat) * newTransform.Basis;
-        //CameraPlayer.CameraGrandparent.GlobalTransform = newTransform;
+        //Rotation direction example (Vector3): from Vector3.Up towards Vector3 WallNormal
+        //Rotation subject example (Basis): CameraPlayer.CameraGrandparent.GlobalBasis
+    
+        //Rotation towards WallNormal
+        Quaternion destinationRotation = new(Vector3.Up, targetVector);
+        //Get current rotation
+        Quaternion currentRotation = subjectBasis.GetRotationQuaternion();
+    
+        //Spherical linear interpolation from current rotation towards new rotation
+        Quaternion interpolatedRotation = currentRotation.Slerp(destinationRotation, rotationRate);
+    
+        //Return for application
+        return new Basis(interpolatedRotation);
     }
 
     private Vector3 Run(Vector3 wishDirection, float delta)
