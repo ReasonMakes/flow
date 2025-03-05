@@ -72,9 +72,8 @@ public partial class PlayerMovement : RigidBody3D
     private const float SlopeMovementTireRate = 0.25f; //multiplied with delta
 
     private const float ThrustWallrunCoefficient = 25f; //applied after jerk is added
-    private const float ThrustClimbCoefficient = 0.001f; //applied after jerk is added
-    //private const float ThrustAccelerationClimbCoefficient = 0.1f;
-    private const float SlopeMovementMaxVSpeed = 10f;
+    private const float ThrustClimbCoefficient = 0.1f; //applied after jerk is added
+    private const float SlopeMovementMaxSpeed = 10f; //applied the same as aligned twitch running
 
     private float ThrustTiredWallClimbCoefficient = 1f; //this is dynamically modified when tired-climbing
 
@@ -352,8 +351,6 @@ public partial class PlayerMovement : RigidBody3D
         // * and a value between if not yet at max speed in that direction
         float runAlignmentScaled = Mathf.Clamp(1f - runAlignment / runDynamicMaxSpeed, 0f, 1f);
 
-        Statistic12.Text = $"IsClimbing: {IsClimbing}";
-
         //TWITCH ACCELERATION
         float runDynamicAccelerationTwitch = Twitch;
         if (IsCrouched)
@@ -361,13 +358,28 @@ public partial class PlayerMovement : RigidBody3D
             //Different acceleration when crouched/sliding
             runDynamicAccelerationTwitch *= TwitchSlidingCoefficient;
         }
-        else if (IsWishingIntoSlope && !IsWallRunning)
+        else if (IsWishingIntoSlope)// && !IsWallRunning)
         {
-            //TODO: this needs to be aligned!!
-            if (LinearVelocity.Y >= SlopeMovementMaxVSpeed)
-            {
-                runDynamicAccelerationTwitch = 0f;
-            }
+            //Limit slope movement (climbing or wallrunning) to max speed
+            float slopeAlignment = wishDirection.Dot(LinearVelocity); //TODO: is wish direction tangent to the surface? We need it to be. It might be global up
+            float slopeAlignmentScaled = Mathf.Clamp(1f - slopeAlignment / SlopeMovementMaxSpeed, 0f, 1f);
+
+            runDynamicMaxSpeed *= slopeAlignmentScaled;
+
+            //if (IsClimbing)
+            //{
+            //    runDynamicAccelerationTwitch *= ThrustClimbCoefficient;
+            //}
+            //else if (IsWallRunning)
+            //{
+            //    runDynamicAccelerationTwitch *= ThrustWallrunCoefficient;
+            //}
+
+            //if (LinearVelocity.Y >= SlopeMovementMaxVSpeed)
+            //{
+            //    runDynamicAccelerationTwitch = 0f;
+            //}
+
             //runDynamicAccelerationTwitch *= ThrustAccelerationClimbCoefficient;
         }
         else if (!OnFlat && !OnSlope)
@@ -550,12 +562,15 @@ public partial class PlayerMovement : RigidBody3D
 
         //Default
         ThrustTiredWallClimbCoefficient = 1f;
-        Statistic10.Text = "Not wallrunning";
+        Statistic10.Text = $"IsClimbing: {IsClimbing}, IsWallRunning: {IsWallRunning}";
 
         //Reset wallrun flag
-        if (!OnSlope || thrustDirection == Vector3.Zero || SlopeMovementEnergy <= 0f) {
+        if (IsClimbing || !OnSlope || thrustDirection == Vector3.Zero || SlopeMovementEnergy <= 0f) {
             IsWallRunning = false;
         }
+
+        //Reset climb flag
+        IsClimbing = false;
 
         float wishRawDotWall = wishDirectionRaw.Dot(WallNormal);
         Statistic13.Text = $"wishRawDotSurface: {wishRawDotWall}";
@@ -573,13 +588,22 @@ public partial class PlayerMovement : RigidBody3D
                 {
                     Statistic9.Text = $"Wish-surface dot: {wishDirectionRaw.Dot(surfaceNormalWishingInto)}";
                     bool isLookingAtSurface = wishDirectionRaw.Dot(surfaceNormalWishingInto) < -0.5f;
-                    if (!isLookingAtSurface && wishRawDotWall < 0.5f)
+                    if (!isLookingAtSurface && wishRawDotWall < 0.5f) //not looking away from the wall
                     {
-                        //Set wallrunning flag
                         IsWallRunning = true;
 
                         //TODO: allow walljumping or moving directly into the wall to end wallrunning.
                     }
+                }
+                else if (
+                    SlopeMovementEnergy > 0f
+                    && !OnFlat
+                    && thrustDirection != Vector3.Zero //wishing to thrust
+                    && thrustDirection.Dot(Vector3.Up) >= SlopeDotUp //wishing to thrust up (climb). Could also use surfaceNormalWishingInto
+                )
+                {
+                    IsWallRunning = false;
+                    IsClimbing = true;
                 }
                 else if (
                     SlopeMovementEnergy <= 0f
@@ -615,7 +639,7 @@ public partial class PlayerMovement : RigidBody3D
                     thrustDirection = (wishDirection - (WallNormal * wishDirection.Dot(WallNormal))).Normalized();
 
                     //Diagnostics
-                    Statistic10.Text = $"Wallrunning, thrustDirection.Dot(Vector3.Up): {thrustDirection.Dot(Vector3.Up)}";
+                    Statistic10.Text += $", thrustDirection.Dot(Vector3.Up): {thrustDirection.Dot(Vector3.Up)}";
                 }
             }
             else if ( //wishing to thrust down
