@@ -24,7 +24,7 @@ public partial class PlayerMovement : RigidBody3D
     [Export] public CameraPlayer CameraPlayer;
     public float MouseSensitivity = 0.001f;
 
-    //Thrust
+    //Thrust/twitch
     private bool InputForward = false;
     private bool InputLeft = false;
     private bool InputRight = false;
@@ -35,20 +35,19 @@ public partial class PlayerMovement : RigidBody3D
     private const float ThrustMaxSpeedOnFlat = 10f;
     private const float ThrustMaxSpeedInAir = 5f;
 
-    //Twitch
     private const float Twitch = 250f; //base acceleration which will be modified by alignment
     private const float TwitchInAirCoefficient = 0.4f;
     private const float TwitchSlidingCoefficient = 0.075f;
-
-    //Jerk
-    private float Jerk = 0f; //added acceleration which starts at 0 and increases up to JerkMagnitude
+    
+    //Jerk - Added acceleration which starts at 0 and increases up to JerkMagnitude. Only applies on flat surfaces
+    private float Jerk = 0f; //
     private const float JerkMagnitude = 200f; //maximum added acceleration (will be this after JerkPeriod elapsed)
     private const float JerkPeriod = 1f; //time it takes to develop jerk, in seconds
     private const float JerkDecayRate = 16f; //how quickly developed jerk is lost if not actively developing it
     private const float JerkDecayRateInAir = 4f;
 
     //Drag
-    private const float DragOnFlat = 1e4f;
+    private const float DragOnFlat = 1e4f; //also the default drag
     private const float DragInAirCoefficient = 0.01f;
     private const float DragCrouchedCoefficient = 0.05f;
     private const float DragWallrunningCoefficient = 1f;
@@ -83,14 +82,15 @@ public partial class PlayerMovement : RigidBody3D
 
     //Jump
     private bool InputJump = false;
-    private const float JumpForce = 2e3f;
+    private const float JumpVSpeed = 10f;
 
     private float JumpCooldown = 0f;
-    private const float JumpCooldownPeriod = 1f; //how long after jumping until you can jump again, in seconds
-    private const float JumpNoDragPeriod = 0.2f; //how long after jumping that there is no drag even if on a surface, in seconds
+    private const float JumpCooldownPeriod = 0.1f; //how long after jumping until you can jump again, in seconds
+    private const float JumpNoDragPeriod = 0f; //how long after jumping that there is no drag even if on a surface, in seconds
                                                  //this helps to prevent jump height from being dependent on update rate
 
     private float MaxAchievedHeight = 0f;
+    private float MaxAchievedVSpeed = 0f;
 
     //Dash
     private bool InputDash = false;
@@ -155,10 +155,17 @@ public partial class PlayerMovement : RigidBody3D
         //JUMP
         if (InputJump && OnFlat && JumpCooldown <= 0f)
         {
-            ApplyImpulse(Vector3.Up * JumpForce);
+            //VSpeed will reset if negative, otherwise add to it
+            LinearVelocity = new Vector3(
+                LinearVelocity.X,
+                Mathf.Max(LinearVelocity.Y + JumpVSpeed, JumpVSpeed),
+                LinearVelocity.Z
+            );
+
             JumpCooldown = JumpCooldownPeriod;
 
             //Diagnose
+            MaxAchievedVSpeed = 0f;
             MaxAchievedHeight = 0f;
         }
         JumpCooldown = Mathf.Max(0f, JumpCooldown -= delta);
@@ -179,8 +186,9 @@ public partial class PlayerMovement : RigidBody3D
         Statistic8.Text = $"Climb energy: {SlopeMovementEnergy}";
 
         //Jumping
+        MaxAchievedVSpeed = Mathf.Max(MaxAchievedVSpeed, LinearVelocity.Y);
         MaxAchievedHeight = Mathf.Max(MaxAchievedHeight, GlobalPosition.Y);
-        Statistic11.Text = $"MaxAchievedHeight: {MaxAchievedHeight}";
+        Statistic11.Text = $"MaxAchievedHeight: {MaxAchievedHeight}, MaxAchievedVSpeed: {MaxAchievedVSpeed}";
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
@@ -195,11 +203,7 @@ public partial class PlayerMovement : RigidBody3D
         ApplyForce(finalThrustVector * delta);
 
         //Drag
-        if ((OnFlat || OnSlope) && JumpCooldown < JumpCooldownPeriod - JumpNoDragPeriod)
-        {
-            //Surface drag
-            ApplyForce(-LinearVelocity * (Mass * GetDrag() * delta)); //F = ma
-        }
+        ApplyForce(-LinearVelocity * (Mass * GetDrag() * delta)); //F = ma
         
         //Wallrunning anti-gravity
         if (IsWallRunning) ApplyForce(Mass * -GetGravity()); //F = ma TODO: make this start to weaken only right before climb energy runs out
@@ -212,22 +216,32 @@ public partial class PlayerMovement : RigidBody3D
     {
         float drag = DragOnFlat;
 
-        if (OnFlat)
+        //[Deprecated as at short jump heights this seems to no longer be a problem?]
+        //[It was also causing a glitch where you would get an hSpeed burst from jumping due to air drag while on getting flat acceleration]
+        //We check against the no drag period here so that
+        //jump height isn't somewhat-randomly reduced
+        //if the player collider is in contact with the ground for an extra tick
+        //due to a high update rate
+        if ((OnFlat || OnSlope) && JumpCooldown < JumpCooldownPeriod - JumpNoDragPeriod)
         {
-            //Ground
-            if (IsCrouched)
+            //Surface
+            if (OnFlat)
             {
-                drag *= DragCrouchedCoefficient;
+                //Ground
+                if (IsCrouched)
+                {
+                    drag *= DragCrouchedCoefficient;
+                }
             }
-        }
-        else if (IsWallRunning)
-        {
-            //Wallrunning
-            drag *= DragWallrunningCoefficient;
+            else if (IsWallRunning)
+            {
+                //Wallrunning
+                drag *= DragWallrunningCoefficient;
+            }
         }
         else
         {
-            //Air or climbing
+            //Air
             drag *= DragInAirCoefficient;
         }
 
@@ -262,22 +276,25 @@ public partial class PlayerMovement : RigidBody3D
             }
 
             //Movement
-            float jerkCoefficient = OnFlat ? JerkMagnitude : 1f;
+            float jerkCoefficient = OnFlat ? JerkMagnitude : 1f; //don't jerk unless on a flat surface
             finalMoveVector = GetVectorAlignedJerked(delta, wishDirection, jerkCoefficient);
         }
 
         //Wall-running camera roll
-        float wallrunCameraRollAmount = 1f / 4f;
-        float wallrunCameraRollRate = 30f * delta; //Slerp() increments by this until reaching 1
-        Vector3 targetVector = IsWallRunning ? Vector3.Up.Slerp(WallNormal, wallrunCameraRollAmount) : Vector3.Up;
+        if (WallNormal != Vector3.Down || !IsWallRunning) //can't compute a rotation from Vector3.Up to Vector3.Down since there are infinite possibilities
+        {
+            float wallrunCameraRollAmount = 1f / 4f;
+            float wallrunCameraRollRate = 30f * delta; //Slerp() increments by this until reaching 1
+            Vector3 targetVector = IsWallRunning ? Vector3.Up.Slerp(WallNormal, wallrunCameraRollAmount) : Vector3.Up;
 
-        CameraPlayer.CameraGrandparent.GlobalBasis = GetRotationSlerpTowardsVector
-        (
-            CameraPlayer.CameraGrandparent.GlobalBasis,
-            targetVector,
-            wallrunCameraRollRate
-        );
-
+            CameraPlayer.CameraGrandparent.GlobalBasis = GetRotationSlerpTowardsVector
+            (
+                CameraPlayer.CameraGrandparent.GlobalBasis,
+                targetVector,
+                wallrunCameraRollRate
+            );
+        }
+        
         return finalMoveVector;
     }
 
@@ -306,21 +323,23 @@ public partial class PlayerMovement : RigidBody3D
         //while allowing us to maintain responsive air acceleration
 
         //+ if aligned, - if opposite, 0 if perpendicular
-        //float runAlignment = wishDirection.Dot(new(LinearVelocity.X, 0f, LinearVelocity.Z));
         float runAlignment = wishDirection.Dot(new(LinearVelocity.X, 0f, LinearVelocity.Z));
 
-        //Gradient value from 0 to 1, with:
-        // * 0 if aligned and at max speed,
-        // * 1 if not aligned,
-        // * and a value between if not yet at max speed in that direction
+        //Set max speed - this prevents the player from being able to gain a ton of hsped by just adding a direction input right after jumping
         float runDynamicMaxSpeed = ThrustMaxSpeedOnFlat;
         if (!OnFlat && !OnSlope)
         {
             runDynamicMaxSpeed = ThrustMaxSpeedInAir;
         }
+
+        //Gradient value from 0 to 1, with:
+        // * 0 if aligned and at max speed,
+        // * 1 if not aligned,
+        // * and a value between if not yet at max speed in that direction
         float runAlignmentScaled = Mathf.Clamp(1f - runAlignment / runDynamicMaxSpeed, 0f, 1f);
 
         Statistic15.Text = $"IsClimbing: {IsClimbing}";
+
         //TWITCH ACCELERATION
         float runDynamicAccelerationTwitch = Twitch;
         if (IsCrouched)
