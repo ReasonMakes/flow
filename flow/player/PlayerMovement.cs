@@ -30,34 +30,31 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputRight = false;
     private bool InputBack = false;
 
-    public float ThrustForce = 5e4f; //1000f; //public variable because slider attached
-
-    private float ThrustForceTiredWallClimbCoefficient = 1f; //this is dynamically modified when tired-climbing
+    private const float Thrust = 5e4f; //thrust multiplied in AFTER jerk is added and alignment is factored
 
     private const float ThrustMaxSpeedOnFlat = 10f;
     private const float ThrustMaxSpeedInAir = 5f;
 
-    //Twitch?
-    private const float ThrustAcceleration = 250f; //2.5e4f; //250f;
-    private const float ThrustAccelerationInAirCoefficient = 0.4f;
-    private const float ThrustAccelerationSlidingCoefficient = 0.075f;
+    //Twitch
+    private const float Twitch = 250f; //base acceleration which will be modified by alignment
+    private const float TwitchInAirCoefficient = 0.4f;
+    private const float TwitchSlidingCoefficient = 0.075f;
 
     //Jerk
-    private float Jerk = 0f;
-    private const float JerkMagnitude = 200f;
-    private const float JerkPeriod = 2f;
-    private const float JerkRate = 2f;
-    private const float JerkDecayRate = 16f;
+    private float Jerk = 0f; //added acceleration which starts at 0 and increases up to JerkMagnitude
+    private const float JerkMagnitude = 200f; //maximum added acceleration (will be this after JerkPeriod elapsed)
+    private const float JerkPeriod = 1f; //time it takes to develop jerk, in seconds
+    private const float JerkDecayRate = 16f; //how quickly developed jerk is lost if not actively developing it
     private const float JerkDecayRateInAir = 4f;
 
     //Drag
-    private const float DragOnFlat = 1e4f; //20f;
+    private const float DragOnFlat = 1e4f;
     private const float DragInAirCoefficient = 0.01f;
     private const float DragCrouchedCoefficient = 0.05f;
     private const float DragWallrunningCoefficient = 1f;
 
-    //Wall/ceiling thrusting
-    private const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface
+    //Slope thrusting
+    private const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface (45 deg)
                                                      //LESS THAN this values is a slope and engages climbing/wallrunning
                                                      //This is the dot product of the normal of the surface to global up
                                                      //-1 is down, 0 is toward the horizon, 1 is up
@@ -71,12 +68,14 @@ public partial class PlayerMovement : RigidBody3D
 
     private bool IsClimbing = false;
 
-    private float ClimbEnergy = 1f;
-    private const float ClimbRestRate = 1f; //multiplied with delta
-    private const float ClimbTireRate = 0.1f; //multiplied with delta
+    private float SlopeMovementEnergy = 1f;
+    private const float SlopeMovementRestRate = 1f; //multiplied with delta
+    private const float SlopeMovementTireRate = 0.25f; //multiplied with delta
 
-    private const float ThrustAccelerationClimbCoefficient = 0.5f;
-    private const float ClimbMaxVSpeed = 10f;
+    private const float ThrustAccelerationClimbCoefficient = 0.1f;
+    private const float SlopeMovementMaxVSpeed = 10f;
+
+    private float ThrustTiredWallClimbCoefficient = 1f; //this is dynamically modified when tired-climbing
 
     //Crouching/sliding
     private bool InputCrouch = false;
@@ -84,7 +83,7 @@ public partial class PlayerMovement : RigidBody3D
 
     //Jump
     private bool InputJump = false;
-    private const float JumpForce = 2e3f; //2000f * 360f;
+    private const float JumpForce = 2e3f;
 
     private float JumpCooldown = 0f;
     private const float JumpCooldownPeriod = 1f; //how long after jumping until you can jump again, in seconds
@@ -132,11 +131,6 @@ public partial class PlayerMovement : RigidBody3D
         }
     }
 
-    //public void UpdateThrustForce(float val)
-    //{
-    //    ThrustForce = val;
-    //}
-
     public override void _PhysicsProcess(double deltaDouble)
     {
         float delta = (float)deltaDouble;
@@ -151,11 +145,11 @@ public partial class PlayerMovement : RigidBody3D
         //Process climb energy
         if (OnFlat)
         {
-            ClimbEnergy = Mathf.Min(1f, ClimbEnergy + (delta * ClimbRestRate));
+            SlopeMovementEnergy = Mathf.Min(1f, SlopeMovementEnergy + (delta * SlopeMovementRestRate));
         }
         else if (IsWishingIntoSlope || IsWallRunning)
         {
-            ClimbEnergy = Mathf.Max(0f, ClimbEnergy - (delta * ClimbTireRate));
+            SlopeMovementEnergy = Mathf.Max(0f, SlopeMovementEnergy - (delta * SlopeMovementTireRate));
         }
 
         //JUMP
@@ -182,7 +176,7 @@ public partial class PlayerMovement : RigidBody3D
 
         //Climbing
         Statistic7.Text = $"IsWishingIntoSlope: {IsWishingIntoSlope}";
-        Statistic8.Text = $"Climb energy: {ClimbEnergy}";
+        Statistic8.Text = $"Climb energy: {SlopeMovementEnergy}";
 
         //Jumping
         MaxAchievedHeight = Mathf.Max(MaxAchievedHeight, GlobalPosition.Y);
@@ -198,7 +192,7 @@ public partial class PlayerMovement : RigidBody3D
 
         Vector3 thrustDirection = GetDirection(wishDirectionRaw, state);
         Vector3 finalThrustVector = ProcessMovementAndGetVector(thrustDirection, delta);
-        ApplyForce(finalThrustVector * (ThrustForce * ThrustForceTiredWallClimbCoefficient * delta));
+        ApplyForce(finalThrustVector * delta);
 
         //Drag
         if ((OnFlat || OnSlope) && JumpCooldown < JumpCooldownPeriod - JumpNoDragPeriod)
@@ -212,26 +206,6 @@ public partial class PlayerMovement : RigidBody3D
 
         //Diagnostics
         TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
-    }
-
-    private void ApplyAccelerationAndDragOverTime(Vector3 accelerationVector, float delta)
-    {
-        //DON'T MULTIPLY BY DELTA IN THE ACCELERATION ARGUMENT OF THIS METHOD!
-        //Correct example usage:
-        //float magnitude = 10f;
-        //Vector3 direction = -GlobalBasis.Z;
-        //ApplyAcceleration(magnitude * direction, delta);
-
-        //This actually uses a force formula, but we assume the mass is 1, thus it ends up applying acceleration, and the vector is titled acceleration
-        //F = ma
-        //F = (1)a
-        //F = a
-
-        float dragComponent = GetDrag();
-        
-        //Apply drag friction with an exponential decay expression to account for users with throttled physics update rates
-        float decayFactor = Mathf.Exp(-dragComponent * delta);
-        LinearVelocity = accelerationVector / dragComponent * (1f - decayFactor) + (LinearVelocity * decayFactor);
     }
 
     private float GetDrag()
@@ -272,12 +246,29 @@ public partial class PlayerMovement : RigidBody3D
         )
         {
             //Running on the ground
-            finalMoveVector = Run(wishDirection, delta);
+
+            //Audio
+            //Set time period between footsteps
+            float runAudioTimerPeriod;
+            Vector3 velocityHorizontal = new(LinearVelocity.X, 0f, LinearVelocity.Z);
+            if (velocityHorizontal.Length() != 0f) //Don't divide by 0
+            {
+                //Footsteps period proportional to hspeed
+                runAudioTimerPeriod = 2.5f / velocityHorizontal.Length();
+            }
+            else
+            {
+                runAudioTimerPeriod = float.MaxValue;
+            }
+
+            //Movement
+            float jerkCoefficient = OnFlat ? JerkMagnitude : 1f;
+            finalMoveVector = GetVectorAlignedJerked(delta, wishDirection, jerkCoefficient);
         }
 
         //Wall-running camera roll
+        float wallrunCameraRollAmount = 1f / 4f;
         float wallrunCameraRollRate = 30f * delta; //Slerp() increments by this until reaching 1
-        float wallrunCameraRollAmount = 1f/4f;
         Vector3 targetVector = IsWallRunning ? Vector3.Up.Slerp(WallNormal, wallrunCameraRollAmount) : Vector3.Up;
 
         CameraPlayer.CameraGrandparent.GlobalBasis = GetRotationSlerpTowardsVector
@@ -290,48 +281,24 @@ public partial class PlayerMovement : RigidBody3D
         return finalMoveVector;
     }
 
-    ////Very fancy lambda expression which isn't human readable AT ALL so sadly deprecating it in favour of the equivalent method below
-    //private static Basis GetRotationSlerpTowardsVector(Basis basis, Vector3 target, float rate) =>
-    //new(basis.GetRotationQuaternion().Slerp(new Quaternion(Vector3.Up, target), rate));
     private static Basis GetRotationSlerpTowardsVector(Basis subjectBasis, Vector3 targetVector, float rotationRate)
     {
         //Rotation direction example (Vector3): from Vector3.Up towards Vector3 WallNormal
         //Rotation subject example (Basis): CameraPlayer.CameraGrandparent.GlobalBasis
-    
-        //Rotation towards WallNormal
-        Quaternion destinationRotation = new(Vector3.Up, targetVector);
+
         //Get current rotation
         Quaternion currentRotation = subjectBasis.GetRotationQuaternion();
-    
+        //Rotation towards target
+        Quaternion destinationRotation = new(Vector3.Up, targetVector);
+        
         //Spherical linear interpolation from current rotation towards new rotation
         Quaternion interpolatedRotation = currentRotation.Slerp(destinationRotation, rotationRate);
-    
+        
         //Return for application
         return new Basis(interpolatedRotation);
     }
 
-    private Vector3 Run(Vector3 wishDirection, float delta)
-    {
-        //--
-        //Audio
-        //Set time period between footsteps
-        float runAudioTimerPeriod;
-        Vector3 velocityHorizontal = new(LinearVelocity.X, 0f, LinearVelocity.Z);
-        if (velocityHorizontal.Length() != 0f) //Don't divide by 0
-        {
-            //Footsteps period proportional to hspeed
-            runAudioTimerPeriod = 2.5f / velocityHorizontal.Length();
-        }
-        else
-        {
-            runAudioTimerPeriod = float.MaxValue;
-        }
-
-        float jerkCoefficient = OnFlat ? JerkMagnitude : 1f;
-        return GetVectorAlignedJerked(delta, wishDirection, ThrustAcceleration, jerkCoefficient);
-    }
-
-    private Vector3 GetVectorAlignedJerked(float delta, Vector3 wishDirection, float runDynamicAccelerationTwitch, float jerkCoefficient)
+    private Vector3 GetVectorAlignedJerked(float delta, Vector3 wishDirection, float jerkCoefficient)
     {
         //ALIGNMENT
         //This prevents accelerating past a max speed in the input direction
@@ -355,15 +322,16 @@ public partial class PlayerMovement : RigidBody3D
 
         Statistic15.Text = $"IsClimbing: {IsClimbing}";
         //TWITCH ACCELERATION
+        float runDynamicAccelerationTwitch = Twitch;
         if (IsCrouched)
         {
             //Different acceleration when crouched/sliding
-            runDynamicAccelerationTwitch *= ThrustAccelerationSlidingCoefficient;
+            runDynamicAccelerationTwitch *= TwitchSlidingCoefficient;
         }
         else if (IsWishingIntoSlope && !IsWallRunning)
         {
             //TODO: this needs to be aligned!!
-            if (LinearVelocity.Y >= ClimbMaxVSpeed)
+            if (LinearVelocity.Y >= SlopeMovementMaxVSpeed)
             {
                 runDynamicAccelerationTwitch = 0f;
             }
@@ -372,7 +340,7 @@ public partial class PlayerMovement : RigidBody3D
         else if (!OnFlat && !OnSlope)
         {
             //Air Acceleration
-            runDynamicAccelerationTwitch *= ThrustAccelerationInAirCoefficient;
+            runDynamicAccelerationTwitch *= TwitchInAirCoefficient;
         }
 
         //JERK
@@ -382,7 +350,7 @@ public partial class PlayerMovement : RigidBody3D
         if (!IsCrouched && wishDirection.Normalized().Length() == 1)
         {
             //Develop jerk - increase acceleration (i.e. make this jerk rather than simply accelerate)
-            Jerk = Mathf.Min((Jerk + (delta * JerkRate)) * jerkAlignment, JerkPeriod);
+            Jerk = Mathf.Min((Jerk + delta) * jerkAlignment, JerkPeriod);
         }
         else
         {
@@ -403,7 +371,7 @@ public partial class PlayerMovement : RigidBody3D
         float jerk = (Jerk / JerkPeriod) * jerkCoefficient;
 
         //COMBINE
-        float runMagnitude = (runDynamicAccelerationTwitch * runAlignmentScaled) + jerk;
+        float runMagnitude = ((runDynamicAccelerationTwitch * runAlignmentScaled) + jerk) * (Thrust * ThrustTiredWallClimbCoefficient);
         Vector3 runVector = wishDirection * runMagnitude;
 
         return runVector;
@@ -455,7 +423,7 @@ public partial class PlayerMovement : RigidBody3D
         Vector3? wallNormal = null;
 
         //Dynamic thrust force default (attenuated when tired-thrusting into a slope)
-        float thrustForce = ThrustForce;
+        float thrustForce = 1f;
 
         //Collision detection
         int contactCount = state.GetContactCount();
@@ -532,7 +500,7 @@ public partial class PlayerMovement : RigidBody3D
         //- Default (!OnFlat && !onSlope): air movement [no redirection]
 
         //Allow climbing straight-up and inverted surfaces
-        if (isCurrentCheckAWishIntoASlope && ClimbEnergy > 0f)
+        if (isCurrentCheckAWishIntoASlope && SlopeMovementEnergy > 0f)
         {
             wishDirection = wishDirectionRaw;
         }
@@ -541,9 +509,9 @@ public partial class PlayerMovement : RigidBody3D
         Vector3 thrustDirection = (wishDirection - (surfaceNormalWishingInto * wishDirection.Dot(surfaceNormalWishingInto))).Normalized();
 
         //Default
-        ThrustForceTiredWallClimbCoefficient = 1f;
+        ThrustTiredWallClimbCoefficient = 1f;
         Statistic10.Text = "Not wallrunning";
-        if (!OnSlope || thrustDirection == Vector3.Zero || ClimbEnergy <= 0f) {
+        if (!OnSlope || thrustDirection == Vector3.Zero || SlopeMovementEnergy <= 0f) {
             IsWallRunning = false;
         }
 
@@ -552,7 +520,7 @@ public partial class PlayerMovement : RigidBody3D
             if (onSlope)
             {
                 if (
-                    ClimbEnergy > 0f
+                    SlopeMovementEnergy > 0f
                     && !OnFlat
                     && thrustDirection != Vector3.Zero //wishing to thrust
                     && thrustDirection.Dot(Vector3.Up) < SlopeDotUp //not wishing to thrust up (climb). Could also use surfaceNormalWishingInto
@@ -569,7 +537,7 @@ public partial class PlayerMovement : RigidBody3D
                     }
                 }
                 else if (
-                    ClimbEnergy <= 0f
+                    SlopeMovementEnergy <= 0f
                     && thrustDirection.Dot(Vector3.Up) > 0f //wishing to thrust up
                 )
                 {
@@ -586,7 +554,7 @@ public partial class PlayerMovement : RigidBody3D
                     //Force
                     float dotWishToNormal = wishDirection.Dot(surfaceNormalWishingInto);
                     float forceMultiplier = 1f - Mathf.Max(0f, -dotWishToNormal);
-                    ThrustForceTiredWallClimbCoefficient = thrustForce * 1f - Mathf.Max(0f, -dotWishToNormal);
+                    ThrustTiredWallClimbCoefficient = thrustForce * 1f - Mathf.Max(0f, -dotWishToNormal);
                 }
 
                 //Wall-running redirect
