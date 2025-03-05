@@ -37,7 +37,6 @@ public partial class PlayerMovement : RigidBody3D
 
     private const float Twitch = 250f; //base acceleration which will be modified by alignment
     private const float TwitchInAirCoefficient = 0.4f;
-    private const float TwitchSlidingCoefficient = 0.075f;
     
     //Jerk - Added acceleration which starts at 0 and increases up to JerkMagnitude. Only applies on flat surfaces
     private float Jerk = 0f; //
@@ -48,10 +47,11 @@ public partial class PlayerMovement : RigidBody3D
 
     //Drag
     private const float DragOnFlat = 1e4f; //also the default drag
-    private const float DragInAirCoefficient = 0.01f;
     private const float DragCrouchedCoefficient = 0.05f;
-    private const float DragWallrunningCoefficient = 1f;
-
+    private const float DragWallrunningCoefficient = 0.1f;
+    private const float DragClimbingCoefficient = 0.1f;
+    private const float DragInAirCoefficient = 0.01f;
+    
     //Slope thrusting
     private const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface (45 deg)
                                                      //LESS THAN this values is a slope and engages climbing/wallrunning
@@ -71,7 +71,9 @@ public partial class PlayerMovement : RigidBody3D
     private const float SlopeMovementRestRate = 1f; //multiplied with delta
     private const float SlopeMovementTireRate = 0.25f; //multiplied with delta
 
-    private const float ThrustAccelerationClimbCoefficient = 0.1f;
+    private const float ThrustWallrunCoefficient = 25f; //applied after jerk is added
+    private const float ThrustClimbCoefficient = 0.001f; //applied after jerk is added
+    //private const float ThrustAccelerationClimbCoefficient = 0.1f;
     private const float SlopeMovementMaxVSpeed = 10f;
 
     private float ThrustTiredWallClimbCoefficient = 1f; //this is dynamically modified when tired-climbing
@@ -79,6 +81,8 @@ public partial class PlayerMovement : RigidBody3D
     //Crouching/sliding
     private bool InputCrouch = false;
     private bool IsCrouched = false;
+
+    private const float TwitchSlidingCoefficient = 0.075f;
 
     //Jump
     private bool InputJump = false;
@@ -238,6 +242,16 @@ public partial class PlayerMovement : RigidBody3D
                 //Wallrunning
                 drag *= DragWallrunningCoefficient;
             }
+            else if (IsClimbing)
+            {
+                //Climbing
+                drag *= DragClimbingCoefficient;
+            }
+            else
+            {
+                //Scraping along wall
+                drag *= DragInAirCoefficient;
+            }
         }
         else
         {
@@ -338,7 +352,7 @@ public partial class PlayerMovement : RigidBody3D
         // * and a value between if not yet at max speed in that direction
         float runAlignmentScaled = Mathf.Clamp(1f - runAlignment / runDynamicMaxSpeed, 0f, 1f);
 
-        Statistic15.Text = $"IsClimbing: {IsClimbing}";
+        Statistic12.Text = $"IsClimbing: {IsClimbing}";
 
         //TWITCH ACCELERATION
         float runDynamicAccelerationTwitch = Twitch;
@@ -354,7 +368,7 @@ public partial class PlayerMovement : RigidBody3D
             {
                 runDynamicAccelerationTwitch = 0f;
             }
-            runDynamicAccelerationTwitch *= ThrustAccelerationClimbCoefficient;
+            //runDynamicAccelerationTwitch *= ThrustAccelerationClimbCoefficient;
         }
         else if (!OnFlat && !OnSlope)
         {
@@ -389,8 +403,19 @@ public partial class PlayerMovement : RigidBody3D
         //Apply development
         float jerk = (Jerk / JerkPeriod) * jerkCoefficient;
 
+        //WALLRUN
+        float slopeCoefficient = 1f;
+        if (IsClimbing)
+        {
+            slopeCoefficient = ThrustClimbCoefficient;
+        }
+        else if (IsWallRunning)
+        {
+            slopeCoefficient = ThrustWallrunCoefficient;
+        }
+
         //COMBINE
-        float runMagnitude = ((runDynamicAccelerationTwitch * runAlignmentScaled) + jerk) * (Thrust * ThrustTiredWallClimbCoefficient);
+        float runMagnitude = ((runDynamicAccelerationTwitch * runAlignmentScaled) + jerk) * (Thrust * ThrustTiredWallClimbCoefficient * slopeCoefficient);
         Vector3 runVector = wishDirection * runMagnitude;
 
         return runVector;
@@ -503,12 +528,8 @@ public partial class PlayerMovement : RigidBody3D
         }
 
         OnSlope = onSlope;
-        Statistic6.Text = $"onFlat: {OnFlat}, onSlope: {onSlope}, surfaceNormalDotWishSmallest: {surfaceNormalDotWishSmallest}, WallNormal: {WallNormal}";
 
-        if (wallNormal.HasValue)
-        {
-            Statistic6.Text += $", wallNormal: {wallNormal}";
-        }
+        Statistic6.Text = $"onFlat: {OnFlat}, onSlope: {onSlope}, surfaceNormalDotWishSmallest: {surfaceNormalDotWishSmallest}, WallNormal: {WallNormal}";
 
 
         //RE-DIRECTION ALONG COLLIDER SURFACE TANGENT
@@ -530,9 +551,14 @@ public partial class PlayerMovement : RigidBody3D
         //Default
         ThrustTiredWallClimbCoefficient = 1f;
         Statistic10.Text = "Not wallrunning";
+
+        //Reset wallrun flag
         if (!OnSlope || thrustDirection == Vector3.Zero || SlopeMovementEnergy <= 0f) {
             IsWallRunning = false;
         }
+
+        float wishRawDotWall = wishDirectionRaw.Dot(WallNormal);
+        Statistic13.Text = $"wishRawDotSurface: {wishRawDotWall}";
 
         if (contactCount > 0)
         {
@@ -547,9 +573,9 @@ public partial class PlayerMovement : RigidBody3D
                 {
                     Statistic9.Text = $"Wish-surface dot: {wishDirectionRaw.Dot(surfaceNormalWishingInto)}";
                     bool isLookingAtSurface = wishDirectionRaw.Dot(surfaceNormalWishingInto) < -0.5f;
-                    if (!isLookingAtSurface)
+                    if (!isLookingAtSurface && wishRawDotWall < 0.5f)
                     {
-                        //Wall-running flag
+                        //Set wallrunning flag
                         IsWallRunning = true;
 
                         //TODO: allow walljumping or moving directly into the wall to end wallrunning.
