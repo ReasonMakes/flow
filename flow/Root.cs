@@ -36,8 +36,9 @@ public partial class Root : Node
         if
         (
             FPSUserMax <= 0
+            && Time.GetTicksMsec() > 6000f //wait until the physics engine is ready
             && (
-                (int)Engine.GetPhysicsFrames() % Engine.PhysicsTicksPerSecond == 0 //1 second
+                (int)Engine.GetPhysicsFrames() % Engine.PhysicsTicksPerSecond == 0 //check every 1 second
                 || FPSAverageSlowPrevious < 0.0
                 || FPSAverageSlow < 0.0
             )

@@ -1,102 +1,72 @@
+using System.Runtime.InteropServices;
 using Godot;
-using static Godot.WebSocketPeer;
 
 public partial class PlayerMovement : RigidBody3D
 {
-    //Diagnostics
-    [Export] private Label Statistic2;
-    [Export] private Label Statistic3;
-    [Export] private Label Statistic4;
-    [Export] private Label Statistic5;
-    [Export] private Label Statistic6;
-    [Export] private Label Statistic7;
-    [Export] private Label Statistic8;
-    [Export] private Label Statistic9;
-    [Export] private Label Statistic10;
-    [Export] private Label Statistic11;
-    [Export] private Label Statistic12;
-    [Export] private Label Statistic13;
-    [Export] private Label Statistic14;
-    [Export] private Label Statistic15;
-    [Export] private CsgBox3D TestBox;
-
-    //Look
+    [Export] private Statistics Statistics;
     [Export] public CameraPlayer CameraPlayer;
     public float MouseSensitivity = 0.001f;
 
-    //Thrust/twitch
+    //Thrust
+    [Export] public CsgBox3D DiagnosticVector;
     private bool InputForward = false;
     private bool InputLeft = false;
     private bool InputRight = false;
     private bool InputBack = false;
 
-    private const float Thrust = 5e4f; //thrust multiplied in AFTER jerk is added and alignment is factored
+    private const float ThrustMagnitude = 250f;
+    private const float ThrustMagnitudeOnFlatCoefficient = 1f;
+    private const float ThrustMagnitudeOnSlopeCoefficient = 0.4f;
+    private const float ThrustMagnitudeInAirCoefficient = 0.4f;
+    private const float ThrustMagnitudeCrouchedCoefficient = 0.05f;
 
-    private const float ThrustMaxSpeedOnFlat = 10f;
-    private const float ThrustMaxSpeedInAir = 5f;
+    //Twitch
+    private const float MaxTwitchSpeed = 20f; //actual twitch speed will be about half of this since twitch acceleration decays towards 0 the closer it gets to this value
+    private const float MaxTwitchSpeedInAir = 7.85f;
 
-    private const float Twitch = 250f; //base acceleration which will be modified by alignment
-    private const float TwitchInAirCoefficient = 0.4f;
-    
     //Jerk - Added acceleration which starts at 0 and increases up to JerkMagnitude. Only applies on flat surfaces
-    private float Jerk = 0f; //
+    private float Jerk = 0f; //value from 0f to 1f
     private const float JerkMagnitude = 200f; //maximum added acceleration (will be this after JerkPeriod elapsed)
-    private const float JerkPeriod = 1f; //time it takes to develop jerk, in seconds
+    private const float JerkMagnitudeInAir = 0f;
+    private const float JerkRate = 1f; //how quickly jerk is developed
     private const float JerkDecayRate = 16f; //how quickly developed jerk is lost if not actively developing it
     private const float JerkDecayRateInAir = 4f;
 
-    //Drag
-    private const float DragOnFlat = 1e4f; //also the default drag
-    private const float DragCrouchedCoefficient = 0.05f;
-    private const float DragWallrunningCoefficient = 0.1f;
-    private const float DragClimbingCoefficient = 0.1f;
-    private const float DragInAirCoefficient = 0.01f;
-    
-    //Slope thrusting
+    //Slopes
     private const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface (45 deg)
                                                      //LESS THAN this values is a slope and engages climbing/wallrunning
                                                      //This is the dot product of the normal of the surface to global up
                                                      //-1 is down, 0 is toward the horizon, 1 is up
                                                      //cos(angle) = dot :. angle = cos^-1(dot)
-    private bool OnFlat = false;
-    private bool OnSlope = false;
+    
+    private enum Surface
+    {
+        Air,
+        Slope,
+        Flat
+    }
+    private Surface SurfaceOn = Surface.Air;
+    private Surface SurfaceWishingInto = Surface.Air;
+    private Vector3? SurfaceOnNormal = null;
+    private Vector3? SurfaceWishingIntoNormal = null;
 
-    private bool IsWishingIntoSlope = false;
-    private bool IsWallRunning = false;
-    private Vector3 WallNormal = Vector3.Up;
+    //Slope movement
+    private float SlopeMovementEnergy = 0f;
 
-    private bool IsClimbing = false;
+    //Drag
+    private const float Drag = 20f;
+    private const float DragOnFlatCoefficient = 1f;
+    private const float DragOnSlopeCoefficient = 0.01f;
+    private const float DragInAirCoefficient = 0f; //0.01f;
+    private const float DragCrouchedCoefficient = 0.05f;
 
-    private float SlopeMovementEnergy = 1f;
-    private const float SlopeMovementRestRate = 1f; //multiplied with delta
-    private const float SlopeMovementTireRate = 0.25f; //multiplied with delta
-
-    private const float ThrustWallrunCoefficient = 25f; //applied after jerk is added
-    private const float ThrustClimbCoefficient = 0.1f; //applied after jerk is added
-    private const float SlopeMovementMaxSpeed = 10f; //applied the same as aligned twitch running
-
-    private float ThrustTiredWallClimbCoefficient = 1f; //this is dynamically modified when tired-climbing
-
-    //Crouching/sliding
+    //Crouch
     private bool InputCrouch = false;
     private bool IsCrouched = false;
-
-    private const float TwitchSlidingCoefficient = 0.075f;
 
     //Jump
     private bool InputJump = false;
     private const float JumpVSpeed = 10f;
-
-    private float JumpCooldown = 0f;
-    private const float JumpCooldownPeriod = 0.1f; //how long after jumping until you can jump again, in seconds
-    private const float JumpNoDragPeriod = 0f; //how long after jumping that there is no drag even if on a surface, in seconds
-                                                 //this helps to prevent jump height from being dependent on update rate
-
-    private float MaxAchievedHeight = 0f;
-    private float MaxAchievedVSpeed = 0f;
-
-    //Dash
-    private bool InputDash = false;
 
     public override void _Input(InputEvent @event)
     {
@@ -105,13 +75,13 @@ public partial class PlayerMovement : RigidBody3D
         InputLeft = Input.IsActionPressed("thrust_run_dir_left");
         InputRight = Input.IsActionPressed("thrust_run_dir_right");
         InputBack = Input.IsActionPressed("thrust_run_dir_back");
-
+    
         InputCrouch = Input.IsActionPressed("crouch");
-
+    
         InputJump = Input.IsActionPressed("thrust_jump");
-
-        InputDash = Input.IsActionJustPressed("thrust_dash");
-
+    
+        //InputDash = Input.IsActionJustPressed("thrust_dash");
+    
         //Look
         if (@event is InputEventMouseMotion mouseMotion)
         {
@@ -121,7 +91,7 @@ public partial class PlayerMovement : RigidBody3D
                 CameraPlayer.CameraParent.Rotation.Y - mouseMotion.Relative.X * MouseSensitivity,
                 CameraPlayer.CameraParent.Rotation.Z
             );
-
+    
             //Pitch, clamp to straight up or down
             CameraPlayer.CameraParent.Rotation = new Vector3(
                 Mathf.Clamp(CameraPlayer.CameraParent.Rotation.X - mouseMotion.Relative.Y * MouseSensitivity,
@@ -138,301 +108,146 @@ public partial class PlayerMovement : RigidBody3D
     {
         float delta = (float)deltaDouble;
 
-        //Unfreeze once game started
-        if (Time.GetTicksMsec() > 6000f)
-        {
-            Freeze = false;
-            //GlobalPosition = new Vector3(GlobalPosition.X, 1f, GlobalPosition.Z);
-        }
-
-        //Process climb energy
-        if (OnFlat)
-        {
-            SlopeMovementEnergy = Mathf.Min(1f, SlopeMovementEnergy + (delta * SlopeMovementRestRate));
-        }
-        else if (IsWishingIntoSlope || IsWallRunning)
-        {
-            SlopeMovementEnergy = Mathf.Max(0f, SlopeMovementEnergy - (delta * SlopeMovementTireRate));
-        }
-
-        //JUMP
-        if (InputJump && OnFlat && JumpCooldown <= 0f)
-        {
-            //VSpeed will reset if negative, otherwise add to it
-            LinearVelocity = new Vector3(
-                LinearVelocity.X,
-                Mathf.Max(LinearVelocity.Y + JumpVSpeed, JumpVSpeed),
-                LinearVelocity.Z
-            );
-
-            JumpCooldown = JumpCooldownPeriod;
-
-            //Diagnose
-            MaxAchievedVSpeed = 0f;
-            MaxAchievedHeight = 0f;
-        }
-        JumpCooldown = Mathf.Max(0f, JumpCooldown -= delta);
-
-        //DIAGNOSTICS
+        //Diagnostics
         //Speed
-        string testSpeed = LinearVelocity.Length() != 0f && LinearVelocity.Length() < 0.1f ? "<0.1" : $"{LinearVelocity.Length():F2}";
-        Statistic2.Text = $"Speed: {testSpeed}";
+        string statSpeed = LinearVelocity.Length() != 0f && LinearVelocity.Length() < 0.1f ? "<0.1" : $"{LinearVelocity.Length():F2}";
         float hSpeed = new Vector3(LinearVelocity.X, 0f, LinearVelocity.Z).Length();
-        string testHSpeed = hSpeed != 0f && hSpeed < 0.1f ? "<0.1" : $"{hSpeed:F2}";
-        Statistic3.Text = $"HSpeed: {testHSpeed}";
-        string testVSpeed = LinearVelocity.Y != 0f && Mathf.Abs(LinearVelocity.Y) < 0.1f ? "<+/-0.1" : $"{LinearVelocity.Y:F2}";
-        Statistic4.Text = $"VSpeed: {testVSpeed}";
-        Statistic5.Text = $"Angular velocity: {AngularVelocity}";
+        string statHSpeed = hSpeed != 0f && hSpeed < 0.1f ? "<0.1" : $"{hSpeed:F2}";
+        string statVSpeed = LinearVelocity.Y != 0f && Mathf.Abs(LinearVelocity.Y) < 0.1f ? "<+/-0.1" : $"{LinearVelocity.Y:F2}";
 
-        //Climbing
-        Statistic7.Text = $"IsWishingIntoSlope: {IsWishingIntoSlope}";
-        Statistic8.Text = $"Climb energy: {SlopeMovementEnergy}";
+        Statistics.Statistic2.Text = $"Speed: {statSpeed}";
+        Statistics.Statistic3.Text = $"HSpeed: {statHSpeed}";
+        Statistics.Statistic4.Text = $"VSpeed: {statVSpeed}";
+        Statistics.Statistic5.Text = $"Jerk: {Jerk}, Surface factor: {GetThrustPerSurface()}";
 
-        //Jumping
-        MaxAchievedVSpeed = Mathf.Max(MaxAchievedVSpeed, LinearVelocity.Y);
-        MaxAchievedHeight = Mathf.Max(MaxAchievedHeight, GlobalPosition.Y);
-        Statistic11.Text = $"MaxAchievedHeight: {MaxAchievedHeight}, MaxAchievedVSpeed: {MaxAchievedVSpeed}";
+        //Surface
+        Statistics.Statistic7.Text = $"SurfaceOn: {SurfaceOn}";
+        Statistics.Statistic8.Text = $"SurfaceWishingInto: {SurfaceWishingInto}";
+        Statistics.Statistic9.Text = $"SurfaceOnNormal: {SurfaceOnNormal}";
+        Statistics.Statistic10.Text = $"SurfaceWishingIntoNormal: {SurfaceWishingIntoNormal}";
+
+        //Slope movement
+        Statistics.Statistic11.Text = $"SlopeMovementEnergy: {SlopeMovementEnergy}";
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
     {
         float delta = state.Step;
 
-        //Thrust/run
+        //SLOPE MOVEMENT PT. 1 (climbing, wallrunning)
+        bool noPreviousSlopeMovement = SurfaceOn != Surface.Slope && SurfaceWishingInto != Surface.Slope;
+        float speedPreviously = LinearVelocity.Length(); //TODO: align this
+
+        //THRUST
+        //Direction
+        Vector3 thrustDirection = GetThrustDirection(state);
+
+        //Surface factor
+        float thrustMagnitude = GetThrustPerSurface();
+
+        //Alignment factor
+        float alignmentFactor;
+        if (SurfaceOn == Surface.Flat)
+        {
+            alignmentFactor = Mathf.Max(0f, MaxTwitchSpeed - thrustDirection.Dot(LinearVelocity)) / MaxTwitchSpeed;
+        }
+        else
+        {
+            alignmentFactor = Mathf.Max(0f, MaxTwitchSpeedInAir - thrustDirection.Dot(LinearVelocity)) / MaxTwitchSpeedInAir;
+        }
+        thrustMagnitude *= alignmentFactor;
+        Statistics.Statistic6.Text = $"Alignment: {alignmentFactor}";
+
+        //Jerk term
+        JerkDevelop(thrustDirection, alignmentFactor, delta);
+        if (SurfaceOn == Surface.Flat)
+        {
+            thrustMagnitude += (Jerk * JerkMagnitude);
+        }
+        else
+        {
+            thrustMagnitude += (Jerk * JerkMagnitudeInAir);
+        }
+
+        //Sum
+        Statistics.Statistic6.Text += $", thrustMagnitude: {thrustMagnitude}";
+        Vector3 thrustVector = thrustDirection * thrustMagnitude;
+
+        //INTEGRATE DRAG
+        float drag = GetDrag();
+        if (drag != 0f)
+        {
+            float decayFactor = Mathf.Exp(-drag * delta);
+            LinearVelocity = (LinearVelocity * decayFactor) + (thrustVector / drag * (1f - decayFactor));
+        }
+        else
+        {
+            LinearVelocity += thrustVector;
+        }
+        Statistics.Statistic6.Text += $", drag: {drag}";
+
+        //JUMP
+        if (InputJump && SurfaceOn == Surface.Flat)
+        {
+            LinearVelocity = new Vector3(
+                LinearVelocity.X,
+                Mathf.Max(LinearVelocity.Y + JumpVSpeed, JumpVSpeed), //VSpeed will reset if negative, otherwise add to it
+                LinearVelocity.Z
+            );
+        }
+
+        //SLOPE MOVEMENT PT. 2 (climbing, wallrunning)
+        if (SurfaceOn == Surface.Flat)
+        {
+            //Reset SlopeMovementEnergy
+            SlopeMovementEnergy = 0f;
+        }
+        else if ((SurfaceOn == Surface.Slope || SurfaceWishingInto == Surface.Slope) && noPreviousSlopeMovement)
+        {
+            //Entered into a slope
+            //Set SlopeMovementEnergy
+            SlopeMovementEnergy = Mathf.Max(SlopeMovementEnergy, speedPreviously);
+        }
+        else
+        {
+            //Decrement SlopeMovementEnergy
+            SlopeMovementEnergy = Mathf.Max(0f, SlopeMovementEnergy - delta);
+        }
+
+        //DIAGNOSTICS
+        DiagnosticVector.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
+    }
+    
+    private Vector3 GetThrustDirection(PhysicsDirectBodyState3D state)
+    {
         Vector3 wishDirectionRaw = GetWishDirectionRaw();
+        Vector3 wishDirectionTangentToUp = (wishDirectionRaw - (Vector3.Up * wishDirectionRaw.Dot(Vector3.Up))).Normalized();
 
-        Vector3 thrustDirection = GetDirection(wishDirectionRaw, state);
-        Vector3 finalThrustVector = ProcessMovementAndGetVector(thrustDirection, delta);
-        ApplyForce(finalThrustVector * delta);
+        UpdateCollisionDetection(state, wishDirectionTangentToUp);
 
-        //Drag
-        ApplyForce(-LinearVelocity * (Mass * GetDrag() * delta)); //F = ma
-        
-        //Wallrunning anti-gravity
-        if (IsWallRunning) ApplyForce(Mass * -GetGravity()); //F = ma TODO: make this start to weaken only right before climb energy runs out
+        //By default align to up
+        Vector3 thrustDirection = wishDirectionTangentToUp;
 
-        //Diagnostics
-        TestBox.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
-    }
-
-    private float GetDrag()
-    {
-        float drag = DragOnFlat;
-
-        //[Deprecated as at short jump heights this seems to no longer be a problem?]
-        //[It was also causing a glitch where you would get an hSpeed burst from jumping due to air drag while on getting flat acceleration]
-        //We check against the no drag period here so that
-        //jump height isn't somewhat-randomly reduced
-        //if the player collider is in contact with the ground for an extra tick
-        //due to a high update rate
-        if ((OnFlat || OnSlope) && JumpCooldown < JumpCooldownPeriod - JumpNoDragPeriod)
+        //Wishing into a surface?
+        if (SurfaceWishingIntoNormal.HasValue)
         {
-            //Surface
-            if (OnFlat)
-            {
-                //Ground
-                if (IsCrouched)
-                {
-                    drag *= DragCrouchedCoefficient;
-                }
-            }
-            else if (IsWallRunning)
-            {
-                //Wallrunning
-                drag *= DragWallrunningCoefficient;
-            }
-            else if (IsClimbing)
-            {
-                //Climbing
-                drag *= DragClimbingCoefficient;
-            }
-            else
-            {
-                //Scraping along wall
-                drag *= DragInAirCoefficient;
-            }
+            //Align to surface
+            thrustDirection = (wishDirectionRaw - ((Vector3)SurfaceWishingIntoNormal * wishDirectionRaw.Dot((Vector3)SurfaceWishingIntoNormal))).Normalized();
         }
         else
         {
-            //Air
-            drag *= DragInAirCoefficient;
-        }
-
-        return drag;
-    }
-
-    private Vector3 ProcessMovementAndGetVector(Vector3 wishDirection, float delta)
-    {
-        //Default values
-        Vector3 finalMoveVector = Vector3.Zero;
-
-        //Do we WANT to do movement?
-        if (
-            InputForward || InputLeft || InputRight || InputBack
-            || InputJump
-        )
-        {
-            //Running on the ground
-
-            //Audio
-            //Set time period between footsteps
-            float runAudioTimerPeriod;
-            Vector3 velocityHorizontal = new(LinearVelocity.X, 0f, LinearVelocity.Z);
-            if (velocityHorizontal.Length() != 0f) //Don't divide by 0
+            //Not wishing into a surface
+            if (SurfaceOn == Surface.Flat)
             {
-                //Footsteps period proportional to hspeed
-                runAudioTimerPeriod = 2.5f / velocityHorizontal.Length();
+                //On a flat surface
+                //Redirect so we can walk downhill
+                thrustDirection = (wishDirectionTangentToUp - ((Vector3)SurfaceOnNormal * wishDirectionTangentToUp.Dot((Vector3)SurfaceOnNormal))).Normalized();
             }
-            else
-            {
-                runAudioTimerPeriod = float.MaxValue;
-            }
-
-            //Movement
-            float jerkCoefficient = OnFlat ? JerkMagnitude : 1f; //don't jerk unless on a flat surface
-            finalMoveVector = GetVectorAlignedJerked(delta, wishDirection, jerkCoefficient);
-        }
-
-        //Wall-running camera roll
-        if (WallNormal != Vector3.Down || !IsWallRunning) //can't compute a rotation from Vector3.Up to Vector3.Down since there are infinite possibilities
-        {
-            float wallrunCameraRollAmount = 1f / 4f;
-            float wallrunCameraRollRate = 30f * delta; //Slerp() increments by this until reaching 1
-            Vector3 targetVector = IsWallRunning ? Vector3.Up.Slerp(WallNormal, wallrunCameraRollAmount) : Vector3.Up;
-
-            CameraPlayer.CameraGrandparent.GlobalBasis = GetRotationSlerpTowardsVector
-            (
-                CameraPlayer.CameraGrandparent.GlobalBasis,
-                targetVector,
-                wallrunCameraRollRate
-            );
         }
         
-        return finalMoveVector;
+        return thrustDirection;
     }
-
-    private static Basis GetRotationSlerpTowardsVector(Basis subjectBasis, Vector3 targetVector, float rotationRate)
-    {
-        //Rotation direction example (Vector3): from Vector3.Up towards Vector3 WallNormal
-        //Rotation subject example (Basis): CameraPlayer.CameraGrandparent.GlobalBasis
-
-        //Get current rotation
-        Quaternion currentRotation = subjectBasis.GetRotationQuaternion();
-        //Rotation towards target
-        Quaternion destinationRotation = new(Vector3.Up, targetVector);
-        
-        //Spherical linear interpolation from current rotation towards new rotation
-        Quaternion interpolatedRotation = currentRotation.Slerp(destinationRotation, rotationRate);
-        
-        //Return for application
-        return new Basis(interpolatedRotation);
-    }
-
-    private Vector3 GetVectorAlignedJerked(float delta, Vector3 wishDirection, float jerkCoefficient)
-    {
-        //ALIGNMENT
-        //This prevents accelerating past a max speed in the input direction
-        //(a prevalent problem when accelerating in air)
-        //while allowing us to maintain responsive air acceleration
-
-        //+ if aligned, - if opposite, 0 if perpendicular
-        float runAlignment = wishDirection.Dot(new(LinearVelocity.X, 0f, LinearVelocity.Z));
-
-        //Set max speed - this prevents the player from being able to gain a ton of hsped by just adding a direction input right after jumping
-        float runDynamicMaxSpeed = ThrustMaxSpeedOnFlat;
-        if (!OnFlat && !OnSlope)
-        {
-            runDynamicMaxSpeed = ThrustMaxSpeedInAir;
-        }
-
-        //Gradient value from 0 to 1, with:
-        // * 0 if aligned and at max speed,
-        // * 1 if not aligned,
-        // * and a value between if not yet at max speed in that direction
-        float runAlignmentScaled = Mathf.Clamp(1f - runAlignment / runDynamicMaxSpeed, 0f, 1f);
-
-        //TWITCH ACCELERATION
-        float runDynamicAccelerationTwitch = Twitch;
-        if (IsCrouched)
-        {
-            //Different acceleration when crouched/sliding
-            runDynamicAccelerationTwitch *= TwitchSlidingCoefficient;
-        }
-        else if (IsWishingIntoSlope)// && !IsWallRunning)
-        {
-            //Limit slope movement (climbing or wallrunning) to max speed
-            float slopeAlignment = wishDirection.Dot(LinearVelocity); //TODO: is wish direction tangent to the surface? We need it to be. It might be global up
-            float slopeAlignmentScaled = Mathf.Clamp(1f - slopeAlignment / SlopeMovementMaxSpeed, 0f, 1f);
-
-            runDynamicMaxSpeed *= slopeAlignmentScaled;
-
-            //if (IsClimbing)
-            //{
-            //    runDynamicAccelerationTwitch *= ThrustClimbCoefficient;
-            //}
-            //else if (IsWallRunning)
-            //{
-            //    runDynamicAccelerationTwitch *= ThrustWallrunCoefficient;
-            //}
-
-            //if (LinearVelocity.Y >= SlopeMovementMaxVSpeed)
-            //{
-            //    runDynamicAccelerationTwitch = 0f;
-            //}
-
-            //runDynamicAccelerationTwitch *= ThrustAccelerationClimbCoefficient;
-        }
-        else if (!OnFlat && !OnSlope)
-        {
-            //Air Acceleration
-            runDynamicAccelerationTwitch *= TwitchInAirCoefficient;
-        }
-
-        //JERK
-        //Develop
-        //Value from 0.5 to 1 depending on how aligned our running is with our current hVelocity
-        float jerkAlignment = Mathf.Clamp(runAlignment / (runDynamicMaxSpeed / 2f), 0f, 1f);
-        if (!IsCrouched && wishDirection.Normalized().Length() == 1)
-        {
-            //Develop jerk - increase acceleration (i.e. make this jerk rather than simply accelerate)
-            Jerk = Mathf.Min((Jerk + delta) * jerkAlignment, JerkPeriod);
-        }
-        else
-        {
-            float decayRate = JerkDecayRateInAir;
-            if (OnFlat || OnSlope)
-            {
-                decayRate = JerkDecayRate;
-            }
-
-            //Decrement
-            Jerk = Mathf.Max(
-                Jerk - (decayRate * delta),
-                0f
-            );
-        }
-
-        //Apply development
-        float jerk = (Jerk / JerkPeriod) * jerkCoefficient;
-
-        //WALLRUN
-        float slopeCoefficient = 1f;
-        if (IsClimbing)
-        {
-            slopeCoefficient = ThrustClimbCoefficient;
-        }
-        else if (IsWallRunning)
-        {
-            slopeCoefficient = ThrustWallrunCoefficient;
-        }
-
-        //COMBINE
-        float runMagnitude = ((runDynamicAccelerationTwitch * runAlignmentScaled) + jerk) * (Thrust * ThrustTiredWallClimbCoefficient * slopeCoefficient);
-        Vector3 runVector = wishDirection * runMagnitude;
-
-        return runVector;
-    }
-
+    
     private Vector3 GetWishDirectionRaw()
     {
         Vector3 wishDirectionRaw = Vector3.Zero;
@@ -443,43 +258,16 @@ public partial class PlayerMovement : RigidBody3D
         return wishDirectionRaw;
     }
 
-    private Vector3 GetDirection(Vector3 wishDirectionRaw, PhysicsDirectBodyState3D state)
+    private void UpdateCollisionDetection(PhysicsDirectBodyState3D state, Vector3 wishDirectionTangentToUp)
     {
-        //Convert camera look to flat plane
-        //this step MUST be skipped if we want to be able to climb straight-up or inverted inclines
-        //yet, this step is ABSOLUTELY NECESSARY if we want to prevent staying on walls even when tired
-        Vector3 wishDirection = (wishDirectionRaw - (Vector3.Up * wishDirectionRaw.Dot(Vector3.Up))).Normalized();
+        float checkingSurfaceOnNormalDotWishSmallest = 1f;
+        float checkingSurfaceWishingIntoNormalDotWishSmallest = 1f;
 
-        //COLLISION DETECTION
-        //Types of colliders:
-        //- air          [no collider]
-        //- slope        [Vector3.Up.Dot(collider) < SlopeDotUp]
-        //- flat         [Vector3.Up.Dot(collider) >= SlopeDotUp]
-
-        //Types of collisions:
-        //- wishDirection   Wish vector into a collider         [we only use this one in this implementation]
-        //- LinearVelocity  Velocity vector into a collider
-        //- GetGravity()    Gravity vector into a collider
-
-        //Surface flags
-        OnFlat = false;
-        bool onSlope = false;
-
-        //Climbing/wallrunning flags
-        bool isCurrentCheckAWishIntoASlope = false;
-        IsWishingIntoSlope = false;
-
-        //Surface
-        float surfaceNormalDotWishSmallest = 1f;
-        Vector3 surfaceNormalWishingInto = Vector3.Up;
-
-        //Wallrunning surface (no default/nullable)
-        bool isWallNormalAssigned = false;
-        float wallNormalDot = 1f;
-        Vector3? wallNormal = null;
-
-        //Dynamic thrust force default (attenuated when tired-thrusting into a slope)
-        float thrustForce = 1f;
+        //Defaults
+        SurfaceOn = Surface.Air;
+        SurfaceOnNormal = null;
+        SurfaceWishingInto = Surface.Air;
+        SurfaceWishingIntoNormal = null;
 
         //Collision detection
         int contactCount = state.GetContactCount();
@@ -487,188 +275,128 @@ public partial class PlayerMovement : RigidBody3D
         {
             for (int i = 0; i < contactCount; i++)
             {
-                Vector3 surfaceNormal = state.GetContactLocalNormal(i);
+                Vector3 checkingNormal = state.GetContactLocalNormal(i);
 
-                if (Vector3.Up.Dot(surfaceNormal) < SlopeDotUp)
+                //Standing on
+                //Prefer flattest
+                float standOnDot = Vector3.Down.Dot(checkingNormal);
+                if (standOnDot < 0f && standOnDot < checkingSurfaceOnNormalDotWishSmallest)
                 {
-                    //Contacting a sloped surface
-                    onSlope = true;
+                    //Update smallest dot so far
+                    checkingSurfaceOnNormalDotWishSmallest = standOnDot;
 
-                    //Ensure this is the collider we're wishing into the most
-                    float wishIntoDot = wishDirection.Dot(surfaceNormal);
-                    if (wishIntoDot < 0f && wishIntoDot < surfaceNormalDotWishSmallest)
+                    //Normal
+                    SurfaceOnNormal = checkingNormal;
+
+                    //Surface
+                    if (Vector3.Up.Dot(checkingNormal) < SlopeDotUp)
                     {
-                        surfaceNormalDotWishSmallest = wishIntoDot;
-                        surfaceNormalWishingInto = surfaceNormal;
-
-                        isCurrentCheckAWishIntoASlope = true;
+                        SurfaceOn = Surface.Slope;
                     }
-
-                    //Wall normal works similarly, but has no default
-                    if (!isWallNormalAssigned)
+                    else
                     {
-                        wallNormal = surfaceNormal;
-                    }
-                    else if (wishIntoDot < 0f && wishIntoDot < wallNormalDot)
-                    {
-                        wallNormalDot = wishIntoDot;
-                        wallNormal = surfaceNormal;
+                        SurfaceOn = Surface.Flat;
                     }
                 }
-                else
+
+                //Wishing into
+                //Prefer aligned to wish
+                float wishIntoDot = wishDirectionTangentToUp.Dot(checkingNormal);
+                if (wishIntoDot < 0f && wishIntoDot < checkingSurfaceWishingIntoNormalDotWishSmallest)
                 {
-                    //Contacting a flat surface
-                    OnFlat = true;
+                    //Update smallest dot so far
+                    checkingSurfaceWishingIntoNormalDotWishSmallest = wishIntoDot;
 
-                    //Ensure this is the collider we're wishing into the most
-                    float wishIntoDot = wishDirection.Dot(surfaceNormal);
-                    if (wishIntoDot < 0f && wishIntoDot < surfaceNormalDotWishSmallest)
+                    //Normal
+                    SurfaceWishingIntoNormal = checkingNormal;
+
+                    //Surface
+                    if (Vector3.Up.Dot(checkingNormal) < SlopeDotUp)
                     {
-                        surfaceNormalDotWishSmallest = wishIntoDot;
-                        surfaceNormalWishingInto = surfaceNormal;
-
-                        isCurrentCheckAWishIntoASlope = false;
+                        SurfaceWishingInto = Surface.Slope;
+                    }
+                    else
+                    {
+                        SurfaceWishingInto = Surface.Flat;
                     }
                 }
-            }
-
-            //The collider that we're wishing to move into the most (not just at least one collider) is a slope
-            if (isCurrentCheckAWishIntoASlope)
-            {
-                IsWishingIntoSlope = true;
             }
         }
+    }
 
-        OnSlope = onSlope;
+    private float GetThrustPerSurface()
+    {
+        float acceleration = ThrustMagnitude;
 
-        Statistic6.Text = $"onFlat: {OnFlat}, onSlope: {onSlope}, surfaceNormalDotWishSmallest: {surfaceNormalDotWishSmallest}, WallNormal: {WallNormal}";
-
-
-        //RE-DIRECTION ALONG COLLIDER SURFACE TANGENT
-        //Permutations:
-        //- flat surface tangents [redirect wish tangent to surface]
-        //- slope tangents (no up on slopes when tired) [if moving down, redirect wish tangent to surface; if moving up, redirect wish tangent to horizontal of surface]
-        //- [maybe: can move away from slopes - or maybe wall jump away only, or maybe this is a non-issue]
-        //- Default (!OnFlat && !onSlope): air movement [no redirection]
-
-        //Allow climbing straight-up and inverted surfaces
-        if (isCurrentCheckAWishIntoASlope && SlopeMovementEnergy > 0f)
+        //Surface
+        if (SurfaceOn == Surface.Air)
         {
-            wishDirection = wishDirectionRaw;
+            acceleration *= ThrustMagnitudeInAirCoefficient;
         }
-
-        //Get direction along (tangent to) surface (if surface is flat, this is the last step. If in air, surfaceNormalWishingInto defaults to Vector3.Up)
-        Vector3 thrustDirection = (wishDirection - (surfaceNormalWishingInto * wishDirection.Dot(surfaceNormalWishingInto))).Normalized();
-
-        //Default
-        ThrustTiredWallClimbCoefficient = 1f;
-        Statistic10.Text = $"IsClimbing: {IsClimbing}, IsWallRunning: {IsWallRunning}";
-
-        //Reset wallrun flag
-        if (IsClimbing || !OnSlope || thrustDirection == Vector3.Zero || SlopeMovementEnergy <= 0f) {
-            IsWallRunning = false;
-        }
-
-        //Reset climb flag
-        IsClimbing = false;
-
-        float wishRawDotWall = wishDirectionRaw.Dot(WallNormal);
-        Statistic13.Text = $"wishRawDotSurface: {wishRawDotWall}";
-
-        if (contactCount > 0)
+        else if (SurfaceOn == Surface.Slope)
         {
-            if (onSlope)
-            {
-                if (
-                    SlopeMovementEnergy > 0f
-                    && !OnFlat
-                    && thrustDirection != Vector3.Zero //wishing to thrust
-                    && thrustDirection.Dot(Vector3.Up) < SlopeDotUp //not wishing to thrust up (climb). Could also use surfaceNormalWishingInto
-                )
-                {
-                    Statistic9.Text = $"Wish-surface dot: {wishDirectionRaw.Dot(surfaceNormalWishingInto)}";
-                    bool isLookingAtSurface = wishDirectionRaw.Dot(surfaceNormalWishingInto) < -0.5f;
-                    if (!isLookingAtSurface && wishRawDotWall < 0.5f) //not looking away from the wall
-                    {
-                        IsWallRunning = true;
-
-                        //TODO: allow walljumping or moving directly into the wall to end wallrunning.
-                    }
-                }
-                else if (
-                    SlopeMovementEnergy > 0f
-                    && !OnFlat
-                    && thrustDirection != Vector3.Zero //wishing to thrust
-                    && thrustDirection.Dot(Vector3.Up) >= SlopeDotUp //wishing to thrust up (climb). Could also use surfaceNormalWishingInto
-                )
-                {
-                    IsWallRunning = false;
-                    IsClimbing = true;
-                }
-                else if (
-                    SlopeMovementEnergy <= 0f
-                    && thrustDirection.Dot(Vector3.Up) > 0f //wishing to thrust up
-                )
-                {
-                    //Tired-wishing on slope (so we should limit the force)
-                    //If wishing to thrust up, redirect wish to be tangent to the horizontal component of the surface
-
-                    //Direction
-                    //1. Get [the direction on the slope that points upward but is still tangent to it] by removing [the wall's normal] component from [global up].
-                    Vector3 globalUpTangentToSurface = (Vector3.Up - (Vector3.Up.Dot(surfaceNormalWishingInto) * surfaceNormalWishingInto)).Normalized();
-                    //2. Remove the globalUpTangentToSurface component from thrustDirection to get a purely horizontal direction
-                    Vector3 horizontalAlongSlope = thrustDirection - globalUpTangentToSurface * thrustDirection.Dot(globalUpTangentToSurface);
-                    thrustDirection = horizontalAlongSlope.Normalized();
-
-                    //Force
-                    float dotWishToNormal = wishDirection.Dot(surfaceNormalWishingInto);
-                    float forceMultiplier = 1f - Mathf.Max(0f, -dotWishToNormal);
-                    ThrustTiredWallClimbCoefficient = thrustForce * 1f - Mathf.Max(0f, -dotWishToNormal);
-                }
-
-                //Wall-running redirect
-                if (IsWallRunning)
-                {
-                    //Get wall normal for camera tilt and for transforming the thrust direction to be tangent to the wall and the horizontal component only
-                    if (wallNormal.HasValue)
-                    {
-                        WallNormal = (Vector3)wallNormal;
-                    }
-
-                    //Stick to wall
-                    thrustDirection = (wishDirection - (WallNormal * wishDirection.Dot(WallNormal))).Normalized();
-
-                    //Diagnostics
-                    Statistic10.Text += $", thrustDirection.Dot(Vector3.Up): {thrustDirection.Dot(Vector3.Up)}";
-                }
-            }
-            else if ( //wishing to thrust down
-                //-CameraPlayer.GlobalBasis.Z.Dot(Vector3.Up) < 0f //Looking generally-down
-                thrustDirection.Dot(Vector3.Up) <= 0f         //Not wishing to go uphill; wish is flat (will be > 0f if going uphill) or downward (I don't think it will ever be downward)
-            )
-            {
-                //onFlat
-
-                //Tangent thrusting when on a flat surface (this is physically relevant when the surface is very slightly sloped)
-                //So, we need to check if we're ON the flat surface - not whether we're THRUSTING into it or not
-
-                //Get the normal of the surface (pick the collider that is the most flat if there are several colliders)
-                Vector3 normalOfFlattestCollider = Vector3.Down;
-                for (int i = 0; i < contactCount; i++)
-                {
-                    Vector3 normalChecking = state.GetContactLocalNormal(i);
-                    if (Vector3.Up.Dot(normalChecking) > Vector3.Up.Dot(normalOfFlattestCollider))
-                    {
-                        //This collider is the flattest so far
-                        normalOfFlattestCollider = normalChecking;
-                    }
-                }
-
-                //Redirect along tangent
-                thrustDirection = (wishDirection - (normalOfFlattestCollider * wishDirection.Dot(normalOfFlattestCollider))).Normalized();
-            }
+            acceleration *= ThrustMagnitudeOnSlopeCoefficient;
+        }
+        else if (SurfaceOn == Surface.Flat)
+        {
+            acceleration *= ThrustMagnitudeOnFlatCoefficient;
         }
 
-        return thrustDirection;
+        //Crouch
+        if (IsCrouched)
+        {
+            acceleration *= ThrustMagnitudeCrouchedCoefficient;
+        }
+
+        return acceleration;
+    }
+
+    private float GetDrag()
+    {
+        float drag = Drag;
+
+        //Surface
+        if (SurfaceOn == Surface.Air)
+        {
+            drag *= DragInAirCoefficient;
+        }
+        else if (SurfaceOn == Surface.Slope)
+        {
+            drag *= DragOnSlopeCoefficient;
+        }
+        else if (SurfaceOn == Surface.Flat)
+        {
+            drag *= DragOnFlatCoefficient;
+        }
+
+        //Crouch
+        if (IsCrouched)
+        {
+            drag *= DragCrouchedCoefficient;
+        }
+
+        return drag;
+    }
+
+    private void JerkDevelop(Vector3 thrustDirection, float alignmentFactor, float delta)
+    {
+        if (thrustDirection != Vector3.Zero)
+        {
+            if (!IsCrouched)
+            {
+                Jerk = Mathf.Min(Jerk + (delta * JerkRate * alignmentFactor), 1f);
+            }
+        }
+        else
+        {
+            if (SurfaceOn == Surface.Air)
+            {
+                Jerk = Mathf.Max(Jerk - (delta * JerkDecayRateInAir), 0f);
+            }
+            else
+            {
+                Jerk = Mathf.Max(Jerk - (delta * JerkDecayRate), 0f);
+            }
+        }
     }
 }
