@@ -52,6 +52,7 @@ public partial class PlayerMovement : RigidBody3D
 
     //Slope movement
     private float SlopeMovementEnergy = 0f;
+    private const float SlopeMovementEnergyDenominator = 10f; //what amount of energy constitues a 1f factor on thrust magnitude
 
     //Drag
     private const float Drag = 20f;
@@ -152,7 +153,7 @@ public partial class PlayerMovement : RigidBody3D
 
         //Surface factor
         float thrustMagnitude = GetThrustPerSurface();
-
+        
         //Alignment factor
         float alignmentFactor;
         if (SurfaceOn == Surface.Flat)
@@ -167,6 +168,7 @@ public partial class PlayerMovement : RigidBody3D
         Statistics.Statistic6.Text = $"Alignment: {alignmentFactor}";
 
         //Jerk term
+        //TODO: this should apply to wallrunning but not climbing
         JerkDevelop(thrustDirection, alignmentFactor, delta);
         if (SurfaceOn == Surface.Flat)
         {
@@ -360,18 +362,42 @@ public partial class PlayerMovement : RigidBody3D
         float acceleration = ThrustMagnitude;
 
         //Surface
-        if (SurfaceOn == Surface.Air)
+        if (SurfaceOn == Surface.Slope || (SurfaceOn == Surface.Air && SurfaceWishingInto == Surface.Slope))
         {
-            acceleration *= ThrustMagnitudeInAirCoefficient;
-        }
-        else if (SurfaceOn == Surface.Slope)
-        {
+            //Slope movement
             acceleration *= ThrustMagnitudeOnSlopeCoefficient;
+
+            float slopeMovementEnergyFactor = Mathf.Min(1f, SlopeMovementEnergy / SlopeMovementEnergyDenominator);
+            acceleration *= slopeMovementEnergyFactor;
+        }
+        else if (SurfaceOn == Surface.Air)
+        {
+            //Aerial movement
+            acceleration *= ThrustMagnitudeInAirCoefficient;
         }
         else if (SurfaceOn == Surface.Flat)
         {
+            //Flat movement
             acceleration *= ThrustMagnitudeOnFlatCoefficient;
         }
+
+        ////Surface
+        //if (SurfaceOn == Surface.Air )
+        //{
+        //    acceleration *= ThrustMagnitudeInAirCoefficient;
+        //}
+        //else if (SurfaceOn == Surface.Slope)
+        //{
+        //    acceleration *= ThrustMagnitudeOnSlopeCoefficient;
+        //
+        //    float slopeMovementEnergyFactor = 0f; //Mathf.Min(1f, SlopeMovementEnergy / SlopeMovementEnergyDenominator);
+        //    GD.Print(slopeMovementEnergyFactor);
+        //    acceleration *= slopeMovementEnergyFactor;
+        //}
+        //else if (SurfaceOn == Surface.Flat)
+        //{
+        //    acceleration *= ThrustMagnitudeOnFlatCoefficient;
+        //}
 
         //Crouch
         if (IsCrouched)
@@ -387,18 +413,35 @@ public partial class PlayerMovement : RigidBody3D
         float drag = Drag;
 
         //Surface
-        if (SurfaceOn == Surface.Air)
+        if (SurfaceOn == Surface.Slope || (SurfaceOn == Surface.Air && SurfaceWishingInto == Surface.Slope))
         {
-            drag *= DragInAirCoefficient;
-        }
-        else if (SurfaceOn == Surface.Slope)
-        {
+            //Slope
             drag *= DragOnSlopeCoefficient;
+        }
+        else if (SurfaceOn == Surface.Air)
+        {
+            //Aerial
+            drag *= DragInAirCoefficient;
         }
         else if (SurfaceOn == Surface.Flat)
         {
+            //Flat
             drag *= DragOnFlatCoefficient;
         }
+
+        ////Surface
+        //if (SurfaceOn == Surface.Air)
+        //{
+        //    drag *= DragInAirCoefficient;
+        //}
+        //else if (SurfaceOn == Surface.Slope)
+        //{
+        //    drag *= DragOnSlopeCoefficient;
+        //}
+        //else if (SurfaceOn == Surface.Flat)
+        //{
+        //    drag *= DragOnFlatCoefficient;
+        //}
 
         //Crouch
         if (IsCrouched)
