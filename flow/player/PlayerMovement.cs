@@ -14,10 +14,10 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputRight = false;
     private bool InputBack = false;
 
-    private const float ThrustMagnitude = 250f;
+    private const float ThrustMagnitude =  250f;
     private const float ThrustMagnitudeOnFlatCoefficient = 1f;
     private const float ThrustMagnitudeOnSlopeCoefficient = 0.4f;
-    private const float ThrustMagnitudeInAirCoefficient = 0.4f;
+    private const float ThrustMagnitudeInAirCoefficient = 0.002f;//0.4f;
     private const float ThrustMagnitudeCrouchedCoefficient = 0.05f;
 
     //Twitch
@@ -60,6 +60,10 @@ public partial class PlayerMovement : RigidBody3D
     private const float DragInAirCoefficient = 0f; //0.01f;
     private const float DragCrouchedCoefficient = 0.05f;
 
+    private const float DragOnFlatStatic = 0.8f; //the speed below which the player's friction will be raised to very high levels to stop them from slipping,
+                                                 //as long as they ar on a flat and aren't trying to thrust
+                                                 //0.68f was the last measured slipping speed when standing on something that's barely a flat rather than a slope
+
     //Crouch
     private bool InputCrouch = false;
     private bool IsCrouched = false;
@@ -67,6 +71,9 @@ public partial class PlayerMovement : RigidBody3D
     //Jump
     private bool InputJump = false;
     private const float JumpVSpeed = 10f;
+    private bool JumpedAndStillOnFlat = false;
+    private float JumpedResetForcibly = 0f;
+    private const float JumpedResetForciblyPeriod = 1f; //how long in seconds after a jump is the ability to jump re-enabled, even if the player never left the ground
 
     public override void _Input(InputEvent @event)
     {
@@ -128,6 +135,7 @@ public partial class PlayerMovement : RigidBody3D
 
         //Slope movement
         Statistics.Statistic11.Text = $"SlopeMovementEnergy: {SlopeMovementEnergy}";
+        Statistics.Statistic12.Text = $"JumpedAndStillOnFlat: {JumpedAndStillOnFlat}";
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
@@ -186,14 +194,37 @@ public partial class PlayerMovement : RigidBody3D
         }
         Statistics.Statistic6.Text += $", drag: {drag}";
 
-        //JUMP
-        if (InputJump && SurfaceOn == Surface.Flat)
+        //Standing still drag
+        if (SurfaceOn == Surface.Flat && LinearVelocity.Length() < DragOnFlatStatic && thrustDirection == Vector3.Zero)
         {
+            PhysicsMaterialOverride.Friction = 1f;
+        }
+        else
+        {
+            PhysicsMaterialOverride.Friction = 0f;
+        }
+
+        //JUMP
+        //Manage
+        JumpedResetForcibly = Mathf.Max(0f, JumpedResetForcibly - delta);
+        if (SurfaceOn != Surface.Flat || JumpedResetForcibly == 0f)
+        {
+            JumpedAndStillOnFlat = false;
+        }
+
+        //Jump
+        if (InputJump && SurfaceOn == Surface.Flat && !JumpedAndStillOnFlat)
+        {
+            //Set vertical speed
             LinearVelocity = new Vector3(
                 LinearVelocity.X,
                 Mathf.Max(LinearVelocity.Y + JumpVSpeed, JumpVSpeed), //VSpeed will reset if negative, otherwise add to it
                 LinearVelocity.Z
             );
+
+            //Prevent geting extra height
+            JumpedAndStillOnFlat = true;
+            JumpedResetForcibly = JumpedResetForciblyPeriod;
         }
 
         //SLOPE MOVEMENT PT. 2 (climbing, wallrunning)
