@@ -31,8 +31,8 @@ public partial class PlayerMovement : RigidBody3D
     private const float JerkMagnitude = 200f; //maximum added acceleration (will be this after JerkPeriod elapsed)
     private const float JerkMagnitudeInAir = 0f;
     private const float JerkRate = 1f; //how quickly jerk is developed
-    private const float JerkDecayRate = 16f; //how quickly developed jerk is lost if not actively developing it
-    private const float JerkDecayRateInAir = 4f;
+    private const float JerkDecayRate = 1f; //8f; //16f; //how quickly developed jerk is lost if not actively developing it - higher values are faster decay. 0 is no decay.
+    private const float JerkDecayRateInAir = 0.1f;
 
     //Slopes
     private const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface (45 deg)
@@ -61,7 +61,7 @@ public partial class PlayerMovement : RigidBody3D
     private const float DragOnFlatCoefficient = 1f;
     private const float DragOnSlopeCoefficient = 0.01f;
     private const float DragInAirCoefficient = 0f; //0.01f;
-    private const float DragCrouchedCoefficient = 0.05f;
+    private const float DragSlideCoefficient = 0.05f;
 
     private const float DragOnFlatStatic = 0.8f; //the speed below which the player's friction will be raised to very high levels to stop them from slipping,
                                                  //as long as they ar on a flat and aren't trying to thrust
@@ -70,6 +70,12 @@ public partial class PlayerMovement : RigidBody3D
     //Crouch
     private bool InputCrouch = false;
     private bool IsCrouched = false;
+
+    private const float CrouchTwitchCoefficient = 1f;
+    private const float SlideJerkCoefficient = 0.2f;
+
+    private const float SlidingMinSpeedToBegin = 8f; //speed beyond which a crouch is also considered a slide
+    private bool IsSliding = false;
 
     //Jump
     private bool InputJump = false;
@@ -128,7 +134,7 @@ public partial class PlayerMovement : RigidBody3D
         Statistics.Statistic2.Text = $"Speed: {statSpeed}";
         Statistics.Statistic3.Text = $"HSpeed: {statHSpeed}";
         Statistics.Statistic4.Text = $"VSpeed: {statVSpeed}";
-        Statistics.Statistic5.Text = $"Jerk: {Jerk}, Surface factor: {GetThrustPerSurface()}";
+        Statistics.Statistic5.Text = $"Jerk: {Jerk:F2}, Surface factor: {GetThrustPerSurface()}";
 
         //Surface
         Statistics.Statistic7.Text = $"SurfaceOn: {SurfaceOn}";
@@ -139,6 +145,7 @@ public partial class PlayerMovement : RigidBody3D
         //Slope movement
         Statistics.Statistic11.Text = $"SlopeMovementEnergy: {SlopeMovementEnergy}";
         Statistics.Statistic12.Text = $"JumpedAndStillOnFlat: {JumpedAndStillOnFlat}";
+        Statistics.Statistic13.Text = $"IsCrouched: {IsCrouched}, IsSliding: {IsSliding}";
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
@@ -171,15 +178,45 @@ public partial class PlayerMovement : RigidBody3D
 
         //Jerk term
         //TODO: this should apply to wallrunning but not climbing
-        JerkDevelop(thrustDirection, alignmentFactor, delta);
+        JerkProcess(thrustDirection, alignmentFactor, delta);
+        float jerkFactor;
         if (SurfaceOn == Surface.Flat)
         {
-            thrustMagnitude += (Jerk * JerkMagnitude);
+            jerkFactor = (Jerk * JerkMagnitude);
         }
         else
         {
-            thrustMagnitude += (Jerk * JerkMagnitudeInAir);
+            jerkFactor = (Jerk * JerkMagnitudeInAir);
         }
+
+        if (InputCrouch)
+        {
+            IsCrouched = true;
+        }
+        else
+        {
+            //TODO: prevent uncrouching if there is not enough room above
+            IsCrouched = false;
+        }
+
+        if (IsCrouched)
+        {
+            if (LinearVelocity.Length() > SlidingMinSpeedToBegin)
+            {
+                IsSliding = true;
+            }
+        }
+        else
+        {
+            IsSliding = false;
+        }
+
+        if (IsSliding)
+        {
+            jerkFactor *= SlideJerkCoefficient;
+        }
+
+        thrustMagnitude += jerkFactor;
 
         //Sum
         Statistics.Statistic6.Text += $", thrustMagnitude: {thrustMagnitude:F2}";
@@ -250,6 +287,9 @@ public partial class PlayerMovement : RigidBody3D
             //Prevent geting extra height
             JumpedAndStillOnFlat = true;
             JumpedResetForcibly = JumpedResetForciblyPeriod;
+
+            //Stop sliding!
+            IsSliding = false;
         }
 
         //SLOPE MOVEMENT PT. 2 (climbing, wallrunning)
@@ -404,8 +444,8 @@ public partial class PlayerMovement : RigidBody3D
             acceleration *= ThrustMagnitudeOnFlatCoefficient;
         }
 
-        //Crouch
-        if (IsCrouched)
+        //Slide
+        if (IsSliding)
         {
             acceleration *= ThrustMagnitudeCrouchedCoefficient;
         }
@@ -434,34 +474,51 @@ public partial class PlayerMovement : RigidBody3D
             drag *= DragOnFlatCoefficient;
         }
 
-        //Crouch
-        if (IsCrouched)
+        //Slide
+        if (IsSliding)
         {
-            drag *= DragCrouchedCoefficient;
+            drag *= DragSlideCoefficient;
         }
 
         return drag;
     }
 
-    private void JerkDevelop(Vector3 thrustDirection, float alignmentFactor, float delta)
+    private void JerkProcess(Vector3 thrustDirection, float alignmentFactor, float delta)
     {
-        if (thrustDirection != Vector3.Zero)
+        if (IsCrouched || thrustDirection == Vector3.Zero)
         {
-            if (!IsCrouched)
+            //Decay
+            float decayRate;
+            if (SurfaceOn == Surface.Air)
             {
-                Jerk = Mathf.Min(Jerk + (delta * JerkRate * alignmentFactor), 1f);
+                decayRate = JerkDecayRateInAir;
+            }
+            else
+            {
+                decayRate = JerkDecayRate;
+            }
+
+            //decayRate = 1f;
+
+            //Jerk = Mathf.Max(Jerk - (delta * decayRate), 0f);
+
+            if (Jerk > 0f) //don't divide by 0
+            {
+                Jerk -= (decayRate / Jerk) * delta;
+
+                //Jerk *= Mathf.Exp(-decayRate * delta);
+
+                //Jerk = (1f / Jerk) * decayRate * delta;
+            }
+            else
+            {
+                Jerk = 0f;
             }
         }
         else
         {
-            if (SurfaceOn == Surface.Air)
-            {
-                Jerk = Mathf.Max(Jerk - (delta * JerkDecayRateInAir), 0f);
-            }
-            else
-            {
-                Jerk = Mathf.Max(Jerk - (delta * JerkDecayRate), 0f);
-            }
+            //Develop
+            Jerk = Mathf.Min(Jerk + (delta * JerkRate * alignmentFactor), 1f);
         }
     }
 }
