@@ -20,9 +20,11 @@ public partial class PlayerMovement : RigidBody3D
     private const float ThrustMagnitudeInAirCoefficient = 0.002f;//0.4f;
     private const float ThrustMagnitudeCrouchedCoefficient = 0.05f;
 
-    //Twitch
-    private const float MaxTwitchSpeed = 20f; //actual twitch speed will be about half of this since twitch acceleration decays towards 0 the closer it gets to this value
-    private const float MaxTwitchSpeedInAir = 7.85f;
+    private const float MaxSpeedAlignedTwitch = 20f; //actual twitch speed will be about half of this since twitch acceleration decays towards 0 the closer it gets to this value
+    private const float MaxSpeedAlignedTwitchInAir = 7.85f;
+
+    private const float MaxSoftSpeedTotalInAir = 15f; //Soft-cap; the speed at which in-air thrusting magnitude begins to decrease. This is mostly used to nerf airstrafing.
+    private const float MaxSpeedTotalInAir = 23f; //Hard-cap max speed for in-air thrusting. Once the player is moving at this speed, they can now longer accelerate at all - only decelerate
 
     //Jerk - Added acceleration which starts at 0 and increases up to JerkMagnitude. Only applies on flat surfaces
     private float Jerk = 0f; //value from 0f to 1f
@@ -158,14 +160,14 @@ public partial class PlayerMovement : RigidBody3D
         float alignmentFactor;
         if (SurfaceOn == Surface.Flat)
         {
-            alignmentFactor = Mathf.Max(0f, MaxTwitchSpeed - thrustDirection.Dot(LinearVelocity)) / MaxTwitchSpeed;
+            alignmentFactor = Mathf.Max(0f, MaxSpeedAlignedTwitch - thrustDirection.Dot(LinearVelocity)) / MaxSpeedAlignedTwitch;
         }
         else
         {
-            alignmentFactor = Mathf.Max(0f, MaxTwitchSpeedInAir - thrustDirection.Dot(LinearVelocity)) / MaxTwitchSpeedInAir;
+            alignmentFactor = Mathf.Max(0f, MaxSpeedAlignedTwitchInAir - thrustDirection.Dot(LinearVelocity)) / MaxSpeedAlignedTwitchInAir;
         }
         thrustMagnitude *= alignmentFactor;
-        Statistics.Statistic6.Text = $"Alignment: {alignmentFactor}";
+        Statistics.Statistic6.Text = $"Alignment: {alignmentFactor:F2}";
 
         //Jerk term
         //TODO: this should apply to wallrunning but not climbing
@@ -180,7 +182,7 @@ public partial class PlayerMovement : RigidBody3D
         }
 
         //Sum
-        Statistics.Statistic6.Text += $", thrustMagnitude: {thrustMagnitude}";
+        Statistics.Statistic6.Text += $", thrustMagnitude: {thrustMagnitude:F2}";
         Vector3 thrustVector = thrustDirection * thrustMagnitude;
 
         //INTEGRATE DRAG
@@ -192,9 +194,30 @@ public partial class PlayerMovement : RigidBody3D
         }
         else
         {
-            LinearVelocity += thrustVector;
+            //0 drag - such as if in air
+
+            //Prevent air strafing past MaxSpeed
+            bool isDecelerating = (LinearVelocity + thrustVector).Length() < LinearVelocity.Length();
+            if (isDecelerating)
+            {
+                LinearVelocity += thrustVector;
+            }
+            else if (LinearVelocity.Length() < MaxSpeedTotalInAir)
+            {
+                if (LinearVelocity.Length() < MaxSoftSpeedTotalInAir)
+                {
+                    LinearVelocity += thrustVector;
+                }
+                else
+                {
+                    float airstrafeFactor = (MaxSpeedTotalInAir - LinearVelocity.Length()) / (MaxSpeedTotalInAir - MaxSoftSpeedTotalInAir);
+                    LinearVelocity += thrustVector * airstrafeFactor;
+
+                    Statistics.Statistic6.Text += $", airstrafeFactor: {airstrafeFactor:F2}";
+                }
+            }
         }
-        Statistics.Statistic6.Text += $", drag: {drag}";
+        Statistics.Statistic6.Text += $", drag: {drag:F2}";
 
         //Standing still drag
         if (SurfaceOn == Surface.Flat && LinearVelocity.Length() < DragOnFlatStatic && thrustDirection == Vector3.Zero)
@@ -381,24 +404,6 @@ public partial class PlayerMovement : RigidBody3D
             acceleration *= ThrustMagnitudeOnFlatCoefficient;
         }
 
-        ////Surface
-        //if (SurfaceOn == Surface.Air )
-        //{
-        //    acceleration *= ThrustMagnitudeInAirCoefficient;
-        //}
-        //else if (SurfaceOn == Surface.Slope)
-        //{
-        //    acceleration *= ThrustMagnitudeOnSlopeCoefficient;
-        //
-        //    float slopeMovementEnergyFactor = 0f; //Mathf.Min(1f, SlopeMovementEnergy / SlopeMovementEnergyDenominator);
-        //    GD.Print(slopeMovementEnergyFactor);
-        //    acceleration *= slopeMovementEnergyFactor;
-        //}
-        //else if (SurfaceOn == Surface.Flat)
-        //{
-        //    acceleration *= ThrustMagnitudeOnFlatCoefficient;
-        //}
-
         //Crouch
         if (IsCrouched)
         {
@@ -428,20 +433,6 @@ public partial class PlayerMovement : RigidBody3D
             //Flat
             drag *= DragOnFlatCoefficient;
         }
-
-        ////Surface
-        //if (SurfaceOn == Surface.Air)
-        //{
-        //    drag *= DragInAirCoefficient;
-        //}
-        //else if (SurfaceOn == Surface.Slope)
-        //{
-        //    drag *= DragOnSlopeCoefficient;
-        //}
-        //else if (SurfaceOn == Surface.Flat)
-        //{
-        //    drag *= DragOnFlatCoefficient;
-        //}
 
         //Crouch
         if (IsCrouched)
