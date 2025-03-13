@@ -54,7 +54,10 @@ public partial class PlayerMovement : RigidBody3D
 
     //Slope movement
     private float SlopeMovementEnergy = 0f;
-    private const float SlopeMovementEnergyDenominator = 10f; //what amount of energy constitues a 1f factor on thrust magnitude
+    private const float SlopeMovementEnergyDenominator = 4f; //what amount of energy constitues a 1f factor on thrust magnitude
+    private const float SlopeMovementMaxPeriod = 10f; //max time in seconds the player can climb for
+    private bool hasBeenOnFlat = false;
+    private float SpeedPreviousToSlopeMovement;
 
     //Drag
     private const float Drag = 20f;
@@ -143,7 +146,7 @@ public partial class PlayerMovement : RigidBody3D
         Statistics.Statistic10.Text = $"SurfaceWishingIntoNormal: {SurfaceWishingIntoNormal}";
 
         //Slope movement
-        Statistics.Statistic11.Text = $"SlopeMovementEnergy: {SlopeMovementEnergy}";
+        Statistics.Statistic11.Text = $"SpeedPreviousToSlopeMovement: {SpeedPreviousToSlopeMovement:F2}, SlopeMovementEnergy: {SlopeMovementEnergy:F2}, hasBeenOnFlat: {hasBeenOnFlat}";
         Statistics.Statistic12.Text = $"JumpedAndStillOnFlat: {JumpedAndStillOnFlat}";
         Statistics.Statistic13.Text = $"IsCrouched: {IsCrouched}, IsSliding: {IsSliding}";
     }
@@ -151,10 +154,6 @@ public partial class PlayerMovement : RigidBody3D
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
     {
         float delta = state.Step;
-
-        //SLOPE MOVEMENT PT. 1 (climbing, wallrunning)
-        bool noPreviousSlopeMovement = SurfaceOn != Surface.Slope && SurfaceWishingInto != Surface.Slope;
-        float speedPreviously = LinearVelocity.Length(); //TODO: align this
 
         //THRUST
         //Direction
@@ -293,21 +292,33 @@ public partial class PlayerMovement : RigidBody3D
         }
 
         //SLOPE MOVEMENT PT. 2 (climbing, wallrunning)
-        if (SurfaceOn == Surface.Flat)
-        {
-            //Reset SlopeMovementEnergy
-            SlopeMovementEnergy = 0f;
-        }
-        else if ((SurfaceOn == Surface.Slope || SurfaceWishingInto == Surface.Slope) && noPreviousSlopeMovement)
+        
+        if (SurfaceOn == Surface.Slope || SurfaceWishingInto == Surface.Slope)
         {
             //Entered into a slope
-            //Set SlopeMovementEnergy
-            SlopeMovementEnergy = Mathf.Max(SlopeMovementEnergy, speedPreviously);
+            if (hasBeenOnFlat)
+            {
+                //Set SlopeMovementEnergy
+                SlopeMovementEnergy = Mathf.Min(SlopeMovementMaxPeriod, Mathf.Max(SlopeMovementEnergy, SpeedPreviousToSlopeMovement));
+                hasBeenOnFlat = false;
+            }
+            else
+            {
+                //Decrement SlopeMovementEnergy
+                SlopeMovementEnergy = Mathf.Max(0f, SlopeMovementEnergy - delta);
+            }
         }
         else
         {
-            //Decrement SlopeMovementEnergy
-            SlopeMovementEnergy = Mathf.Max(0f, SlopeMovementEnergy - delta);
+            //Remember speed before slope movement
+            SpeedPreviousToSlopeMovement = LinearVelocity.Length(); //TODO: align this
+
+            if (SurfaceOn == Surface.Flat)
+            {
+                //Reset SlopeMovementEnergy
+                SlopeMovementEnergy = 0f;
+                hasBeenOnFlat = true;
+            }
         }
 
         //DIAGNOSTICS
