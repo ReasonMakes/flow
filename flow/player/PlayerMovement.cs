@@ -53,11 +53,9 @@ public partial class PlayerMovement : RigidBody3D
     private Vector3? SurfaceWishingIntoNormal = null;
 
     //Slope movement
-    private float SlopeMovementEnergy = 0f;
-    private const float SlopeMovementEnergyDenominator = 4f; //what amount of energy constitues a 1f factor on thrust magnitude
-    private const float SlopeMovementMaxPeriod = 10f; //max time in seconds the player can climb for
-    private bool hasBeenOnFlat = false;
-    private float SpeedPreviousToSlopeMovement;
+    private float SlopeMovementTimeRemaining = 0f;
+    private const float SlopeMovementDenominator = 2f; //when slope movement time remaining is <= this value, the thrust output begins to reduce
+    private const float SlopeMovementTimePeriodMax = 5f; //max time in seconds the player can climb for
 
     //Drag
     private const float Drag = 20f;
@@ -146,7 +144,7 @@ public partial class PlayerMovement : RigidBody3D
         Statistics.Statistic10.Text = $"SurfaceWishingIntoNormal: {SurfaceWishingIntoNormal}";
 
         //Slope movement
-        Statistics.Statistic11.Text = $"SpeedPreviousToSlopeMovement: {SpeedPreviousToSlopeMovement:F2}, SlopeMovementEnergy: {SlopeMovementEnergy:F2}, hasBeenOnFlat: {hasBeenOnFlat}";
+        Statistics.Statistic11.Text = $"SlopeMovementTimeRemaining: {SlopeMovementTimeRemaining:F2}";
         Statistics.Statistic12.Text = $"JumpedAndStillOnFlat: {JumpedAndStillOnFlat}";
         Statistics.Statistic13.Text = $"IsCrouched: {IsCrouched}, IsSliding: {IsSliding}";
     }
@@ -291,34 +289,14 @@ public partial class PlayerMovement : RigidBody3D
             IsSliding = false;
         }
 
-        //SLOPE MOVEMENT PT. 2 (climbing, wallrunning)
-        
+        //SLOPE MOVEMENT
         if (SurfaceOn == Surface.Slope || SurfaceWishingInto == Surface.Slope)
         {
-            //Entered into a slope
-            if (hasBeenOnFlat)
-            {
-                //Set SlopeMovementEnergy
-                SlopeMovementEnergy = Mathf.Min(SlopeMovementMaxPeriod, Mathf.Max(SlopeMovementEnergy, SpeedPreviousToSlopeMovement));
-                hasBeenOnFlat = false;
-            }
-            else
-            {
-                //Decrement SlopeMovementEnergy
-                SlopeMovementEnergy = Mathf.Max(0f, SlopeMovementEnergy - delta);
-            }
+            SlopeMovementTimeRemaining = Mathf.Max(0f, SlopeMovementTimeRemaining - delta);
         }
-        else
+        else if (SurfaceOn == Surface.Flat)
         {
-            //Remember speed before slope movement
-            SpeedPreviousToSlopeMovement = LinearVelocity.Length(); //TODO: align this
-
-            if (SurfaceOn == Surface.Flat)
-            {
-                //Reset SlopeMovementEnergy
-                SlopeMovementEnergy = 0f;
-                hasBeenOnFlat = true;
-            }
+            SlopeMovementTimeRemaining = SlopeMovementTimePeriodMax;
         }
 
         //DIAGNOSTICS
@@ -441,7 +419,7 @@ public partial class PlayerMovement : RigidBody3D
             //Slope movement
             acceleration *= ThrustMagnitudeOnSlopeCoefficient;
 
-            float slopeMovementEnergyFactor = Mathf.Min(1f, SlopeMovementEnergy / SlopeMovementEnergyDenominator);
+            float slopeMovementEnergyFactor = Mathf.Min(1f, SlopeMovementTimeRemaining / SlopeMovementDenominator);
             acceleration *= slopeMovementEnergyFactor;
         }
         else if (SurfaceOn == Surface.Air)

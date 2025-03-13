@@ -12,12 +12,13 @@ A first-person movement game
 - Menu/Unlock Cursor: Escape
 
 ## Mechanics
-- Dash: Input the dash while mid-air. You will dash in whatever direction you are inputting, not just where you are looking.
-Slide: Run forward until you build up enough speed and then hold the crouch/slide input. You can get more speed/distance by jumping out of the slide at the right time to avoid ground friction.
-- Wall Climb: Run forward whilst facing a wall. Your vertical acceleration wanes as you climb but returns over time while you are not climbing. Wall bouncing will tire out your climb energy.
-- Wall Bounce: Whilst climbing, hold jump.
-- Wall Run: Whilst climbing, face parallel to the wall. It is much faster to move diagonally into the wall.
-- Air Strafe: Develop at least some speed, then let go of the forward input and instead hold a sideways input while very gradually looking in that direction. You will be able to accelerate beyond the maximum speed you could otherwise achieve through running alone. You can alternate directions to go in a relatively straight path.
+- [Unimplemented:] Dash: Input the dash while mid-air. You will dash in whatever direction you are inputting, not just where you are looking.
+Slide: Run forward until you build up enough speed and then hold the crouch/slide input. You can get more speed/distance by jumping out of the slide at the right time to avoid ground friction. You need to remain in the slide for some time to get all of the possible speed from it before jumping out of it.
+- Slope Movement: Run forward whilst facing a wall. Your slope movement energy wanes as you climb but returns when you stand on a flat surface. [Unimplemented:] Wall bouncing will tire out your climb energy.
+- [Unimplemented:] Wall Bounce: Whilst climbing, hold jump.
+- [Unimplemented:] Wall Run: Whilst climbing, face parallel to the wall. It is much faster to move diagonally into the wall.
+- Air Strafe: Develop sufficient speed, then jump, then while midair let go of the forward input and instead hold a sideways input while very gradually and steadily yawing toward direction. You can alternate directions to go in a relatively straight path. You will be able to accelerate beyond the maximum speed you could otherwise achieve through running alone (but not beyond what can be achieved from slide-jumping). This tech is most useful for extending the duration you would otherwise be able to maintain a high speed for - especially by combining it with bunny-hopping.
+- Bunny-hopping: Hold jump. This will cause you to jump the moment you are able to, maximizing the time you spend in the air, reducing friction, and helping you to maintain speed. If you combine this with a slide right as you hit the ground you can reduce friction even further. To maintain air control, release the slide when off the ground.
 
 ## Licence  
     Flow
@@ -40,7 +41,7 @@ Slide: Run forward until you build up enough speed and then hold the crouch/slid
 ## Third-Party Assets
 The majority of sounds were created in-house by me, ScaleShift. For some examples: to record footsteps, jumping, and landing, I was running around holding my cell phone by my feet. To record sliding, I slid my hand across my desk next to my microphone. Etc.
 
-The sounds which were not recorded in-house were sourced from Freesound.org and have licences compatible with the projects. At the time of writing this preamble, all of these sounds have been nonetheless altered in some way.
+The sounds which were not recorded in-house were sourced from Freesound.org and have compatible licences. At the time of writing this preamble, all of these sounds have been nonetheless altered in some way.
 
     Movement, Wall-run: skateboard grinding on metal rail.wav by 21100495 -- https://freesound.org/s/655371/ -- License: Creative Commons 0
     Movement, Dash: Woosh_Low_03.wav by moogy73 -- https://freesound.org/s/425699/ -- License: Creative Commons 0
