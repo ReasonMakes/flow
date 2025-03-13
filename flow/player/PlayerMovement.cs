@@ -14,7 +14,7 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputRight = false;
     private bool InputBack = false;
 
-    private const float ThrustMagnitude =  250f;
+    private const float ThrustMagnitude = 150f; //250f;
     private const float ThrustMagnitudeOnFlatCoefficient = 1f;
     private const float ThrustMagnitudeOnSlopeCoefficient = 0.4f;
     private const float ThrustMagnitudeInAirCoefficient = 0.002f;//0.4f;
@@ -28,7 +28,7 @@ public partial class PlayerMovement : RigidBody3D
 
     //Jerk - Added acceleration which starts at 0 and increases up to JerkMagnitude. Only applies on flat surfaces
     private float Jerk = 0f; //value from 0f to 1f
-    private const float JerkMagnitude = 200f; //maximum added acceleration (will be this after JerkPeriod elapsed)
+    private const float JerkMagnitude = 300f; //200f; //maximum added acceleration (will be this after JerkPeriod elapsed)
     private const float JerkMagnitudeInAir = 0f;
     private const float JerkRate = 1f; //how quickly jerk is developed
     private const float JerkDecayRate = 1f; //8f; //16f; //how quickly developed jerk is lost if not actively developing it - higher values are faster decay. 0 is no decay.
@@ -488,6 +488,7 @@ public partial class PlayerMovement : RigidBody3D
         if (IsCrouched || thrustDirection == Vector3.Zero)
         {
             //Decay
+            //Rate
             float decayRate;
             if (SurfaceOn == Surface.Air)
             {
@@ -498,24 +499,17 @@ public partial class PlayerMovement : RigidBody3D
                 decayRate = JerkDecayRate;
             }
 
-            //decayRate = 1f;
-
-            //Jerk = Mathf.Max(Jerk - (delta * decayRate), 0f);
-
+            //Apply
             if (Jerk > 0f) //don't divide by 0
             {
-                Jerk -= (decayRate / Jerk) * delta;
-
-                //Jerk *= Mathf.Exp(-decayRate * delta);
-
-                //Jerk = (1f / Jerk) * decayRate * delta;
+                Jerk = Mathf.Max(0f, Jerk - (decayRate / Jerk) * delta);
             }
             else
             {
                 Jerk = 0f;
             }
         }
-        else
+        else if (SurfaceOn == Surface.Flat)
         {
             //Develop
             Jerk = Mathf.Min(Jerk + (delta * JerkRate * alignmentFactor), 1f);
