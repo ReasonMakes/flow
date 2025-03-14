@@ -72,7 +72,7 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputCrouch = false;
     private bool IsCrouched = false;
 
-    private const float CrouchTwitchCoefficient = 1f;
+    //private const float CrouchTwitchCoefficient = 1f;
     private const float SlideJerkCoefficient = 0.2f;
 
     private const float SlidingMinSpeedToBegin = 8f; //speed beyond which a crouch is also considered a slide
@@ -361,6 +361,8 @@ public partial class PlayerMovement : RigidBody3D
             for (int i = 0; i < contactCount; i++)
             {
                 Vector3 checkingNormal = state.GetContactLocalNormal(i);
+                Basis checkingBasis = ((Node3D)state.GetContactColliderObject(i)).GlobalBasis;
+                Vector3 checkingNormalGlobal = checkingNormal * checkingBasis; //diagnositc
 
                 //Standing on
                 //Prefer flattest
@@ -377,6 +379,9 @@ public partial class PlayerMovement : RigidBody3D
                     if (Vector3.Up.Dot(checkingNormal) < SlopeDotUp)
                     {
                         SurfaceOn = Surface.Slope;
+
+                        //Diagnostic
+                        GD.Print($"Slope dot: {Vector3.Up.Dot(checkingNormal)}; at {state.GetContactLocalPosition(i)}; globalNormal: {checkingNormalGlobal}, localNormal: {checkingNormal}, basis: {checkingBasis}");
                     }
                     else
                     {
