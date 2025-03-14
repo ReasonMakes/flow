@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TerrainGeneratorResource" load_steps=4 format=3 uid="uid://cg5qr18s6t507"]
+
+[ext_resource type="Material" uid="uid://1a1wfd8hisai" path="res://map/terrain_generator/terrain_generator_material.tres" id="1_mek6l"]
+[ext_resource type="FastNoiseLite" uid="uid://01fw3wqdcm6o" path="res://map/terrain_generator/terrain_generator_noise.tres" id="2_c2i8g"]
+[ext_resource type="Script" uid="uid://hm8pqk2da2cf" path="res://map/terrain_generator/TerrainGeneratorResource.cs" id="3_02ni6"]
+
+[resource]
+script = ExtResource("3_02ni6")
+MeshMaterial = ExtResource("1_mek6l")
+Noise = ExtResource("2_c2i8g")
+MeshSize = Vector2(100, 100)
+MeshAmplitude = 50.0
+MeshRes = 2
+metadata/_custom_type_script = "uid://hm8pqk2da2cf"

@@ -3,28 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\cameraplayer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\cameraplayer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\ui\\statistics.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:ui\\statistics.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\root.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:root.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\player.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\player.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\ui\\menu\\menu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:ui\\menu\\menu.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\scale\\Files\\Dev\\flow\\flow\\map\\terrain_generator\\TerrainGenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:map\\terrain_generator\\TerrainGenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,79 +14,19 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "Menu.cs",
-              "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\UI\\menu\\Menu.cs",
-              "RelativeDocumentMoniker": "UI\\menu\\Menu.cs",
-              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\UI\\menu\\Menu.cs",
-              "RelativeToolTip": "UI\\menu\\Menu.cs",
-              "ViewState": "AgIAAJwAAAAAAAAAAAAnwAgAAAAqAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-05T20:46:54.296Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "Player.cs",
-              "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\Player.cs",
-              "RelativeDocumentMoniker": "player\\Player.cs",
-              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\Player.cs",
-              "RelativeToolTip": "player\\Player.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAxAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-05T20:45:42.38Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "Root.cs",
-              "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\Root.cs",
-              "RelativeDocumentMoniker": "Root.cs",
-              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\Root.cs",
-              "RelativeToolTip": "Root.cs",
-              "ViewState": "AgIAAAsAAAAAAAAAAAAQwBIAAAAIAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-03T23:03:06.945Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Statistics.cs",
-              "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\UI\\Statistics.cs",
-              "RelativeDocumentMoniker": "UI\\Statistics.cs",
-              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\UI\\Statistics.cs",
-              "RelativeToolTip": "UI\\Statistics.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAATAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-05T19:48:54.191Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "CameraPlayer.cs",
-              "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\CameraPlayer.cs",
-              "RelativeDocumentMoniker": "player\\CameraPlayer.cs",
-              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\CameraPlayer.cs",
-              "RelativeToolTip": "player\\CameraPlayer.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-02T03:17:36.322Z"
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "PlayerMovement.cs",
-              "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
-              "RelativeDocumentMoniker": "player\\PlayerMovement.cs",
-              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
-              "RelativeToolTip": "player\\PlayerMovement.cs",
-              "ViewState": "AgIAAGsAAAAAAAAAAAAvwDYAAAAUAAAAAAAAAA==",
+              "Title": "TerrainGenerator.cs",
+              "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\map\\terrain_generator\\TerrainGenerator.cs",
+              "RelativeDocumentMoniker": "map\\terrain_generator\\TerrainGenerator.cs",
+              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\map\\terrain_generator\\TerrainGenerator.cs",
+              "RelativeToolTip": "map\\terrain_generator\\TerrainGenerator.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAgwCYAAAAZAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-05T19:47:31.564Z",
+              "WhenOpened": "2025-03-14T05:00:41.244Z",
               "EditorCaption": ""
             }
           ]
