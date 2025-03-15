@@ -17,7 +17,7 @@ public partial class TerrainGenerator : Node3D
     [Export] public Vector2 MeshSize
     { get => _MeshSize; set { _MeshSize = value; OnGenerationSettingsChanged(); } }
     
-    private float _MeshAmplitude = 10f;
+    private float _MeshAmplitude = 10.666f;
     [Export] public float MeshAmplitude
     { get => _MeshAmplitude; set { _MeshAmplitude = value; OnGenerationSettingsChanged(); } }
     
@@ -32,6 +32,7 @@ public partial class TerrainGenerator : Node3D
     private void OnGenerationSettingsChanged()
     {
         GD.Print("Generation settings changed");
+        //if (Engine.IsEditorHint()) Generate();
         Generate();
     }
     
@@ -42,6 +43,7 @@ public partial class TerrainGenerator : Node3D
         {
             child.QueueFree();
         }
+        //Meshy?.QueueFree();
         Meshy = new();
         
         //Protect against null/problem values
@@ -141,8 +143,18 @@ public partial class TerrainGenerator : Node3D
     
         //Collider
         Meshy.CreateTrimeshCollision();
-    
+
         //Hierachy
+        //if (Meshy.GetParent() == null)
+        //{
+        //    AddChild(Meshy);
+        //}
+        //else
+        //{
+        //    Reparent(Meshy);
+        //}
         AddChild(Meshy);
+        
+
     }
 }

@@ -12,7 +12,8 @@ public partial class Root : Node
     private double FPSAverageSlowPrevious = -1.0;
     private double FPSAverageSlow = -1.0;
     private int FPSUserMax = 0;
-    
+    private const int MinUpdateRate = 1;
+
     public override void _Ready()
     {
         //Set default update rate to the screen refresh rate - this method must be called once to display the user's refresh rate
@@ -64,7 +65,7 @@ public partial class Root : Node
         {
             Engine.PhysicsTicksPerSecond = Mathf.Min
             (
-                (int)FPSAverageSlow,
+                (int)Mathf.Max(MinUpdateRate, FPSAverageSlow),
                 (int)DisplayServer.ScreenGetRefreshRate()
             );
         }
@@ -78,17 +79,16 @@ public partial class Root : Node
         if (FPSUserMax > 0)
         {
             //Manual update rate
-            Engine.MaxFps = FPSUserMax;
-            Engine.PhysicsTicksPerSecond = FPSUserMax;
+            Engine.MaxFps = Mathf.Max(MinUpdateRate, FPSUserMax);
+            Engine.PhysicsTicksPerSecond = Mathf.Max(MinUpdateRate, FPSUserMax);
 
             SpinBoxUpdateRate.Suffix = "Hz";
         }
         else
         {
             //Automatic update rate
-            Engine.MaxFps = (int)DisplayServer.ScreenGetRefreshRate();
-
-            SpinBoxUpdateRate.Suffix = $"(Auto: {Engine.MaxFps} Hz)";
+            Engine.MaxFps = (int)Mathf.Max(MinUpdateRate, DisplayServer.ScreenGetRefreshRate());
+            SpinBoxUpdateRate.Suffix = $"(Auto: {Mathf.Max(MinUpdateRate, Engine.MaxFps)} Hz)";
         }
     }
 

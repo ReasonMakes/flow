@@ -39,6 +39,9 @@ Slide: Run forward until you build up enough speed and then hold the crouch/slid
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ## Third-Party Assets
+### Texture
+Some textures may be from https://ambientcg.com/
+### Sound
 The majority of sounds were created in-house by me, ScaleShift. For some examples: to record footsteps, jumping, and landing, I was running around holding my cell phone by my feet. To record sliding, I slid my hand across my desk next to my microphone. Etc.
 
 The sounds which were not recorded in-house were sourced from Freesound.org and have compatible licences. At the time of writing this preamble, all of these sounds have been nonetheless altered in some way.
