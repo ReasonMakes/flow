@@ -3,8 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\scale\\Files\\Dev\\flow\\flow\\map\\terrain_generator\\TerrainGenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:map\\terrain_generator\\TerrainGenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\map\\terrain_generator\\terraingenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:map\\terrain_generator\\terraingenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -14,8 +18,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "PlayerMovement.cs",
+              "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
+              "RelativeDocumentMoniker": "player\\PlayerMovement.cs",
+              "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
+              "RelativeToolTip": "player\\PlayerMovement.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACUAAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-15T11:06:12.319Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -24,7 +41,7 @@
               "RelativeDocumentMoniker": "map\\terrain_generator\\TerrainGenerator.cs",
               "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\map\\terrain_generator\\TerrainGenerator.cs",
               "RelativeToolTip": "map\\terrain_generator\\TerrainGenerator.cs",
-              "ViewState": "AgIAAAoAAAAAAAAAAAAgwCYAAAAZAAAAAAAAAA==",
+              "ViewState": "AgIAABIAAAAAAAAAAAAAAF8AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-14T05:00:41.244Z",
               "EditorCaption": ""

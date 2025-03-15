@@ -35,7 +35,7 @@ public partial class PlayerMovement : RigidBody3D
     private const float JerkDecayRateInAir = 0.1f;
 
     //Slopes
-    private const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface (45 deg)
+    public const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface (45 deg)
                                                      //LESS THAN this values is a slope and engages climbing/wallrunning
                                                      //This is the dot product of the normal of the surface to global up
                                                      //-1 is down, 0 is toward the horizon, 1 is up
