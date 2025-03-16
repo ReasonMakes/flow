@@ -85,6 +85,8 @@ public partial class PlayerMovement : RigidBody3D
     private float JumpedResetForcibly = 0f;
     private const float JumpedResetForciblyPeriod = 1f; //how long in seconds after a jump is the ability to jump re-enabled, even if the player never left the ground
 
+    private float MaxHeight = 0f;
+
     public override void _Input(InputEvent @event)
     {
         //Run Direction
@@ -145,8 +147,11 @@ public partial class PlayerMovement : RigidBody3D
 
         //Slope movement
         Statistics.Statistic11.Text = $"SlopeMovementTimeRemaining: {SlopeMovementTimeRemaining:F2}";
-        Statistics.Statistic12.Text = $"JumpedAndStillOnFlat: {JumpedAndStillOnFlat}";
+        Statistics.Statistic12.Text = $"JumpedAndStillOnFlat: {JumpedAndStillOnFlat}, MaxHeight: {MaxHeight}";
         Statistics.Statistic13.Text = $"IsCrouched: {IsCrouched}, IsSliding: {IsSliding}";
+
+        //Jump
+        MaxHeight = Mathf.Max(MaxHeight, GlobalPosition.Y);
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
@@ -274,6 +279,13 @@ public partial class PlayerMovement : RigidBody3D
         //Jump
         if (InputJump && SurfaceOn == Surface.Flat && !JumpedAndStillOnFlat)
         {
+            //Prevent geting extra height
+            JumpedAndStillOnFlat = true;
+            JumpedResetForcibly = JumpedResetForciblyPeriod;
+
+            //Stop sliding!
+            IsSliding = false;
+
             //Set vertical speed
             LinearVelocity = new Vector3(
                 LinearVelocity.X,
@@ -281,12 +293,8 @@ public partial class PlayerMovement : RigidBody3D
                 LinearVelocity.Z
             );
 
-            //Prevent geting extra height
-            JumpedAndStillOnFlat = true;
-            JumpedResetForcibly = JumpedResetForciblyPeriod;
-
-            //Stop sliding!
-            IsSliding = false;
+            //Diagnostics
+            MaxHeight = GlobalPosition.Y;
         }
 
         //SLOPE MOVEMENT
@@ -439,7 +447,7 @@ public partial class PlayerMovement : RigidBody3D
         }
 
         //Slide
-        if (IsSliding)
+        if (IsSliding && SurfaceOn != Surface.Air)
         {
             acceleration *= ThrustMagnitudeCrouchedCoefficient;
         }
@@ -457,16 +465,17 @@ public partial class PlayerMovement : RigidBody3D
             //Slope
             drag *= DragOnSlopeCoefficient;
         }
+        else if (SurfaceOn == Surface.Flat && !JumpedAndStillOnFlat)
+        {
+            //Flat
+            drag *= DragOnFlatCoefficient;
+        }
         else if (SurfaceOn == Surface.Air)
         {
             //Aerial
             drag *= DragInAirCoefficient;
         }
-        else if (SurfaceOn == Surface.Flat)
-        {
-            //Flat
-            drag *= DragOnFlatCoefficient;
-        }
+        
 
         //Slide
         if (IsSliding)

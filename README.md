@@ -13,7 +13,7 @@ A first-person movement game
 
 ## Mechanics
 - [Unimplemented:] Dash: Input the dash while mid-air. You will dash in whatever direction you are inputting, not just where you are looking.
-Slide: Run forward until you build up enough speed and then hold the crouch/slide input. You can get more speed/distance by jumping out of the slide at the right time to avoid ground friction. You need to remain in the slide for some time to get all of the possible speed from it before jumping out of it.
+Slide: Run forward until you build up enough speed and then hold the crouch/slide input. You can get more speed/distance by jumping out of the slide at the right time to avoid ground friction. You need to remain in the slide for some time to get all of the possible speed from it before jumping out of it. You will also jump higher by slide-jumping.
 - Slope Movement: Run forward whilst facing a wall. Your slope movement energy wanes as you climb but returns when you stand on a flat surface. [Unimplemented:] Wall bouncing will tire out your climb energy.
 - [Unimplemented:] Wall Bounce: Whilst climbing, hold jump.
 - [Unimplemented:] Wall Run: Whilst climbing, face parallel to the wall. It is much faster to move diagonally into the wall.

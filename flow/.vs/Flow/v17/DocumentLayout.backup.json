@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\root.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:root.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:player\\playermovement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\root.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|solutionrelative:root.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CD68CC1D-C272-43DE-99A7-2CB977E8E8EC}|Flow.csproj|c:\\users\\scale\\files\\dev\\flow\\flow\\map\\terrain_generator\\terraingenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -22,11 +22,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Root.cs",
               "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\Root.cs",
               "RelativeDocumentMoniker": "Root.cs",
@@ -39,13 +39,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "PlayerMovement.cs",
               "DocumentMoniker": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
               "RelativeDocumentMoniker": "player\\PlayerMovement.cs",
               "ToolTip": "C:\\Users\\scale\\Files\\Dev\\flow\\flow\\player\\PlayerMovement.cs",
               "RelativeToolTip": "player\\PlayerMovement.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAACUAAAAyAAAAAAAAAA==",
+              "ViewState": "AgIAAPsAAAAAAAAAAAAEwB8BAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-15T11:06:12.319Z",
               "EditorCaption": ""
@@ -60,8 +60,7 @@
               "RelativeToolTip": "map\\terrain_generator\\TerrainGenerator.cs",
               "ViewState": "AgIAABEAAAAAAAAAAAAMwCMAAAATAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-14T05:00:41.244Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-14T05:00:41.244Z"
             }
           ]
         }
