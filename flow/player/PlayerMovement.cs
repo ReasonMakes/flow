@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Godot;
 
 public partial class PlayerMovement : RigidBody3D
@@ -13,34 +14,32 @@ public partial class PlayerMovement : RigidBody3D
     private bool InputRight = false;
     private bool InputBack = false;
 
-    private const float ThrustMagnitude = 150f; //100f; //250f; //This needs to be high enough to be snappy, but low enough that airstrafing isn't OP
+    private const float ThrustMagnitude = 150f; //250f;
     private const float ThrustMagnitudeOnFlatCoefficient = 1f;
     private const float ThrustMagnitudeOnSlopeCoefficient = 0.4f;
     private const float ThrustMagnitudeInAirCoefficient = 0.002f;//0.4f;
     private const float ThrustMagnitudeCrouchedCoefficient = 0.05f;
 
-    private const float MaxSpeedAlignedTwitch = 20f; //actual twitch speed will be about half of this since twitch acceleration decays towards 0 the closer it gets to this value
+    private const float MaxSpeedAlignedTwitch = 8f; //actual twitch speed will be about half of this since twitch acceleration decays towards 0 the closer it gets to this value
     private const float MaxSpeedAlignedTwitchInAir = 7.85f;
 
-    private const float MaxSoftSpeedTotalInAir = 7f; //Soft-cap; the speed at which in-air thrusting magnitude begins to decrease. This is mostly used to nerf airstrafing.
-    private const float MaxSpeedTotalInAir = 13f; //Hard-cap max speed for in-air thrusting. Once the player is moving at this speed, they can now longer accelerate at all - only decelerate
+    private const float ThrustTotalReduceStartSpeed = 9f; //Soft-cap; the speed at which in-air thrusting magnitude begins to decrease. This is mostly used to nerf airstrafing.
+    private const float ThrustTotalReduceMaxSpeed = 15f; //Hard-cap max speed for in-air thrusting. Once the player is moving at this speed, they can now longer accelerate at all - only decelerate
 
     //Jerk - Added acceleration which starts at 0 and increases up to JerkMagnitude. Only applies on flat surfaces
     private float Jerk = 0f; //value from 0f to 1f
-    private const float JerkMagnitude = 200f; //200f; //maximum added acceleration (will be this after JerkPeriod elapsed).
-                                              //This needs to be great enough to develop more speed through sliding than airstrafing,
-                                              //otherwise there is no point in doing any other tech than airstrafing
+    private const float JerkMagnitude = 200f; //300f; //200f; //maximum added acceleration (will be this after JerkPeriod elapsed)
     private const float JerkMagnitudeInAir = 0f;
-    private const float JerkRate = 1f; //how quickly jerk is developed
+    private const float JerkRate = 2f; //how quickly jerk is developed
     private const float JerkDecayRate = 1f; //8f; //16f; //how quickly developed jerk is lost if not actively developing it - higher values are faster decay. 0 is no decay.
-    private const float JerkDecayRateInAir = 0f; //0.1f;
+    private const float JerkDecayRateInAir = 0.1f;
 
     //Slopes
-    public const float SlopeDotUp = 0.70710678118f; //What angle is a flat surface (45 deg)
-                                                     //LESS THAN this values is a slope and engages climbing/wallrunning
-                                                     //This is the dot product of the normal of the surface to global up
-                                                     //-1 is down, 0 is toward the horizon, 1 is up
-                                                     //cos(angle) = dot :. angle = cos^-1(dot)
+    public const float SlopeDotUp = 0.70710678118f; //~= 45 deg. What angle is a flat surface
+                                                    //LESS THAN this values is a slope and engages climbing/wallrunning
+                                                    //This is the dot product of the normal of the surface to global up
+                                                    //-1 is down, 0 is toward the horizon, 1 is up
+                                                    //cos(angle) = dot :. angle = cos^-1(dot)
     
     private enum Surface
     {
@@ -59,19 +58,15 @@ public partial class PlayerMovement : RigidBody3D
     private const float SlopeMovementTimePeriodMax = 5f; //max time in seconds the player can climb for
 
     //Drag
-    private const float Drag = 30f; //20f; //This needs to be high enough to be snappy, but low enough that airstrafing isn't OP
+    private const float Drag = 20f;
     private const float DragOnFlatCoefficient = 1f;
     private const float DragOnSlopeCoefficient = 0.01f;
     private const float DragInAirCoefficient = 0f; //0.01f;
     private const float DragSlideCoefficient = 0.05f;
 
-    private const float DragOnFlatSpeedToAddStaticFriction = 0.8f; //the speed below which the player's friction will be raised to very high levels to stop them from slipping,
-                                                                   //as long as they are on a flat and aren't trying to thrust
-                                                                   //0.68f was the last measured slipping speed when standing on something that's barely a flat rather than a slope
-
-    private const float DragOnFlatLostFooting = 0.0001f; //Value from >0 to 1 - where approaching 0 approaches no drag at 1 is original drag (no effect)
-    private const float DragOnFlatLostFootingMinSpeed = 9f; //speed to begin slipping - flat surface drag reduces - as if unable to get your footing
-    private const float DragOnFlatLostFootingMaxSpeed = 12f; //speed at which there is max slipperiness
+    private const float DragOnFlatStatic = 0.8f; //the speed below which the player's friction will be raised to very high levels to stop them from slipping,
+                                                 //as long as they ar on a flat and aren't trying to thrust
+                                                 //0.68f was the last measured slipping speed when standing on something that's barely a flat rather than a slope
 
     //Crouch
     private bool InputCrouch = false;
@@ -99,13 +94,13 @@ public partial class PlayerMovement : RigidBody3D
         InputLeft = Input.IsActionPressed("thrust_run_dir_left");
         InputRight = Input.IsActionPressed("thrust_run_dir_right");
         InputBack = Input.IsActionPressed("thrust_run_dir_back");
-    
+
         InputCrouch = Input.IsActionPressed("crouch");
-    
+
         InputJump = Input.IsActionPressed("thrust_jump");
-    
+
         //InputDash = Input.IsActionJustPressed("thrust_dash");
-    
+
         //Look
         if (@event is InputEventMouseMotion mouseMotion)
         {
@@ -115,7 +110,7 @@ public partial class PlayerMovement : RigidBody3D
                 CameraPlayer.CameraParent.Rotation.Y - mouseMotion.Relative.X * MouseSensitivity,
                 CameraPlayer.CameraParent.Rotation.Z
             );
-    
+
             //Pitch, clamp to straight up or down
             CameraPlayer.CameraParent.Rotation = new Vector3(
                 Mathf.Clamp(CameraPlayer.CameraParent.Rotation.X - mouseMotion.Relative.Y * MouseSensitivity,
@@ -169,7 +164,7 @@ public partial class PlayerMovement : RigidBody3D
 
         //Surface factor
         float thrustMagnitude = GetThrustPerSurface();
-        
+
         //Alignment factor
         float alignmentFactor;
         if (SurfaceOn == Surface.Flat)
@@ -230,7 +225,7 @@ public partial class PlayerMovement : RigidBody3D
         Vector3 thrustVector = thrustDirection * thrustMagnitude;
 
         //INTEGRATE DRAG
-        float drag = GetDrag(thrustDirection);
+        float drag = GetDrag();
         if (drag != 0f)
         {
             float decayFactor = Mathf.Exp(-drag * delta);
@@ -246,15 +241,15 @@ public partial class PlayerMovement : RigidBody3D
             {
                 LinearVelocity += thrustVector;
             }
-            else if (LinearVelocity.Length() < MaxSpeedTotalInAir)
+            else if (LinearVelocity.Length() < ThrustTotalReduceMaxSpeed)
             {
-                if (LinearVelocity.Length() < MaxSoftSpeedTotalInAir)
+                if (LinearVelocity.Length() < ThrustTotalReduceStartSpeed)
                 {
                     LinearVelocity += thrustVector;
                 }
                 else
                 {
-                    float airstrafeFactor = (MaxSpeedTotalInAir - LinearVelocity.Length()) / (MaxSpeedTotalInAir - MaxSoftSpeedTotalInAir);
+                    float airstrafeFactor = (ThrustTotalReduceMaxSpeed - LinearVelocity.Length()) / (ThrustTotalReduceMaxSpeed - ThrustTotalReduceStartSpeed);
                     LinearVelocity += thrustVector * airstrafeFactor;
 
                     Statistics.Statistic6.Text += $", airstrafeFactor: {airstrafeFactor:F2}";
@@ -264,7 +259,7 @@ public partial class PlayerMovement : RigidBody3D
         Statistics.Statistic6.Text += $", drag: {drag:F2}";
 
         //Standing still drag
-        if (SurfaceOn == Surface.Flat && LinearVelocity.Length() < DragOnFlatSpeedToAddStaticFriction && thrustDirection == Vector3.Zero)
+        if (SurfaceOn == Surface.Flat && LinearVelocity.Length() < DragOnFlatStatic && thrustDirection == Vector3.Zero)
         {
             PhysicsMaterialOverride.Friction = 1f;
         }
@@ -315,7 +310,7 @@ public partial class PlayerMovement : RigidBody3D
         //DIAGNOSTICS
         DiagnosticVector.GlobalPosition = CameraPlayer.GlobalTransform.Origin + thrustDirection * 2.0f;
     }
-    
+
     private Vector3 GetThrustDirection(PhysicsDirectBodyState3D state)
     {
         Vector3 wishDirectionRaw = GetWishDirectionRaw();
@@ -342,10 +337,10 @@ public partial class PlayerMovement : RigidBody3D
                 thrustDirection = (wishDirectionTangentToUp - ((Vector3)SurfaceOnNormal * wishDirectionTangentToUp.Dot((Vector3)SurfaceOnNormal))).Normalized();
             }
         }
-        
+
         return thrustDirection;
     }
-    
+
     private Vector3 GetWishDirectionRaw()
     {
         Vector3 wishDirectionRaw = Vector3.Zero;
@@ -460,7 +455,7 @@ public partial class PlayerMovement : RigidBody3D
         return acceleration;
     }
 
-    private float GetDrag(Vector3 thrustDirection)
+    private float GetDrag()
     {
         float drag = Drag;
 
@@ -474,34 +469,14 @@ public partial class PlayerMovement : RigidBody3D
         {
             //Flat
             drag *= DragOnFlatCoefficient;
-
-            //Footing slippage
-            if (thrustDirection == Vector3.Zero && LinearVelocity.Length() > DragOnFlatLostFootingMinSpeed)
-            {
-                //Value from 0 to 1 - where 0 is not slipping and 1 is maximal slipping
-                float slip = Mathf.Min(
-                    1f, (LinearVelocity.Length() - DragOnFlatLostFootingMinSpeed) / (DragOnFlatLostFootingMaxSpeed - DragOnFlatLostFootingMinSpeed)
-                );
-
-                //Value from 1 to 0 - where 1 is not slipping and 0 is maximal slipping
-                float slipComplement = 1f - slip;
-
-                //Value from 1 to [slipperiest var] - where 1 is not slipping and [slipperiest var] is maximal slipping
-                float slipScaled = DragOnFlatLostFooting + (slipComplement * (1f - DragOnFlatLostFooting));
-
-                GD.Print($"slipScaled: {slipScaled}");
-
-                //Apply
-                drag *= slipScaled;
-                //drag *= 1f * (slipperiest + ((1f - slip) * (1f - slipperiest)));
-            }
         }
         else if (SurfaceOn == Surface.Air)
         {
             //Aerial
             drag *= DragInAirCoefficient;
         }
-        
+
+
         //Slide
         if (IsSliding)
         {
@@ -513,7 +488,7 @@ public partial class PlayerMovement : RigidBody3D
 
     private void JerkProcess(Vector3 thrustDirection, float alignmentFactor, float delta)
     {
-        if (IsCrouched || thrustDirection == Vector3.Zero)
+        if ((SurfaceOn == Surface.Flat && IsCrouched) || thrustDirection == Vector3.Zero)
         {
             //Decay
             //Rate
@@ -540,7 +515,7 @@ public partial class PlayerMovement : RigidBody3D
         else if (SurfaceOn == Surface.Flat)
         {
             //Develop
-            Jerk = Mathf.Min(Jerk + (delta * JerkRate * alignmentFactor), 1f);
+            Jerk = Mathf.Min(Jerk + (delta * JerkRate * (1f - Jerk)), 1f);
         }
     }
 }
