@@ -16,7 +16,7 @@ public partial class PlayerMovement : RigidBody3D
 
     private const float ThrustMagnitude = 150f; //250f;
     private const float ThrustMagnitudeOnFlatCoefficient = 1f;
-    private const float ThrustMagnitudeOnSlopeCoefficient = 0.4f;
+    private const float ThrustMagnitudeOnSlopeCoefficient = 1f; //0.4f;
     private const float ThrustMagnitudeInAirCoefficient = 0.002f;//0.4f;
     private const float ThrustMagnitudeCrouchedCoefficient = 0.05f;
 
@@ -57,9 +57,12 @@ public partial class PlayerMovement : RigidBody3D
     private const float SlopeMovementDenominator = 2f; //when slope movement time remaining is <= this value, the thrust output begins to reduce
     private const float SlopeMovementTimePeriodMax = 5f; //max time in seconds the player can climb for
 
+    private const float SlopeMovementTimeJumpPenalty = 2f;
+
     //Drag
     private const float Drag = 20f;
     private const float DragOnFlatCoefficient = 1f;
+    private const float DragOnSlopeAndWishingIntoCoefficient = 0.25f;
     private const float DragOnSlopeCoefficient = 0.01f;
     private const float DragInAirCoefficient = 0f; //0.01f;
     private const float DragSlideCoefficient = 0.05f;
@@ -81,7 +84,7 @@ public partial class PlayerMovement : RigidBody3D
     //Jump
     private bool InputJump = false;
     private const float JumpVSpeed = 10f;
-    private bool JumpedAndStillOnFlat = false;
+    private bool JumpedAndStillOnSurface = false;
     private float JumpedResetForcibly = 0f;
     private const float JumpedResetForciblyPeriod = 1f; //how long in seconds after a jump is the ability to jump re-enabled, even if the player never left the ground
 
@@ -147,7 +150,7 @@ public partial class PlayerMovement : RigidBody3D
 
         //Slope movement
         Statistics.Statistic11.Text = $"SlopeMovementTimeRemaining: {SlopeMovementTimeRemaining:F2}";
-        Statistics.Statistic12.Text = $"JumpedAndStillOnFlat: {JumpedAndStillOnFlat}, MaxHeight: {MaxHeight}";
+        Statistics.Statistic12.Text = $"JumpedAndStillOnFlat: {JumpedAndStillOnSurface}, MaxHeight: {MaxHeight}";
         Statistics.Statistic13.Text = $"IsCrouched: {IsCrouched}, IsSliding: {IsSliding}";
 
         //Jump
@@ -271,39 +274,70 @@ public partial class PlayerMovement : RigidBody3D
         //JUMP
         //Manage
         JumpedResetForcibly = Mathf.Max(0f, JumpedResetForcibly - delta);
-        if (SurfaceOn != Surface.Flat || JumpedResetForcibly == 0f)
+        if ((SurfaceOn == Surface.Air && SurfaceWishingInto != Surface.Slope) || JumpedResetForcibly == 0f)
         {
-            JumpedAndStillOnFlat = false;
+            JumpedAndStillOnSurface = false;
         }
 
         //Jump
-        if (InputJump && SurfaceOn == Surface.Flat && !JumpedAndStillOnFlat)
+        if (InputJump && !JumpedAndStillOnSurface //wish
+            && (
+                (SurfaceOn == Surface.Flat) //flat
+                || (SlopeMovementTimeRemaining > 0f //slope
+                    && (
+                        SurfaceOn == Surface.Slope
+                        || (SurfaceOn == Surface.Air && SurfaceWishingInto == Surface.Slope)
+                    )
+                )
+            )
+        )
         {
             //Prevent geting extra height
-            JumpedAndStillOnFlat = true;
+            JumpedAndStillOnSurface = true;
             JumpedResetForcibly = JumpedResetForciblyPeriod;
 
             //Stop sliding!
             IsSliding = false;
 
-            //Set vertical speed
-            LinearVelocity = new Vector3(
-                LinearVelocity.X,
-                Mathf.Max(LinearVelocity.Y + JumpVSpeed, JumpVSpeed), //VSpeed will reset if negative, otherwise add to it
-                LinearVelocity.Z
-            );
+            //Direction
+            if (SurfaceOn != Surface.Flat)
+            {
+                //Walljump
+                //Direction = slope normal
+                Vector3 jumpDirection = (SurfaceWishingIntoNormal == null) ? (Vector3)SurfaceOnNormal : (Vector3)SurfaceWishingIntoNormal;
+
+                //Direction += up
+                jumpDirection = (jumpDirection + Vector3.Up).Normalized();
+
+                //Tire
+                SlopeMovementTimeRemaining = Mathf.Max(0f, SlopeMovementTimeRemaining - SlopeMovementTimeJumpPenalty);
+
+                //Impulse
+                LinearVelocity += jumpDirection * JumpVSpeed;
+            }
+            else
+            {
+                //Set vertical speed directly for consistent bhopping
+                LinearVelocity = new Vector3(
+                    LinearVelocity.X,
+                    Mathf.Max(LinearVelocity.Y + JumpVSpeed, JumpVSpeed), //VSpeed will reset if negative, otherwise add to it
+                    LinearVelocity.Z
+                );
+            }
 
             //Diagnostics
             MaxHeight = GlobalPosition.Y;
         }
 
-        //SLOPE MOVEMENT
+        //SLOPE ENERGY
         if (SurfaceOn == Surface.Slope || SurfaceWishingInto == Surface.Slope)
         {
+            //Tire
             SlopeMovementTimeRemaining = Mathf.Max(0f, SlopeMovementTimeRemaining - delta);
         }
         else if (SurfaceOn == Surface.Flat)
         {
+            //Reset
             SlopeMovementTimeRemaining = SlopeMovementTimePeriodMax;
         }
 
@@ -387,9 +421,6 @@ public partial class PlayerMovement : RigidBody3D
                     if (Vector3.Up.Dot(checkingNormal) < SlopeDotUp)
                     {
                         SurfaceOn = Surface.Slope;
-
-                        //Diagnostic
-                        GD.Print($"Slope dot: {Vector3.Up.Dot(checkingNormal)}; at {state.GetContactLocalPosition(i)}; globalNormal: {checkingNormalGlobal}, localNormal: {checkingNormal}, basis: {checkingBasis}");
                     }
                     else
                     {
@@ -463,9 +494,18 @@ public partial class PlayerMovement : RigidBody3D
         if (SurfaceOn == Surface.Slope || (SurfaceOn == Surface.Air && SurfaceWishingInto == Surface.Slope))
         {
             //Slope
-            drag *= DragOnSlopeCoefficient;
+            if (SurfaceWishingInto == Surface.Slope && SlopeMovementTimeRemaining > 0f)
+            {
+                //Slope movement
+                drag *= DragOnSlopeAndWishingIntoCoefficient;
+            }
+            else
+            {
+                //Sliding along slope
+                drag *= DragOnSlopeCoefficient;
+            }
         }
-        else if (SurfaceOn == Surface.Flat && !JumpedAndStillOnFlat)
+        else if (SurfaceOn == Surface.Flat && !JumpedAndStillOnSurface)
         {
             //Flat
             drag *= DragOnFlatCoefficient;
